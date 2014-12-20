@@ -17,7 +17,13 @@ module.exports = {
 };
 
 
-function newContext() {
+function newContext(opts) {
+
+	//// Configuration
+
+	opts = opts || {};
+
+	var idSeparator = opts.idSeparator || '.';
 
 	//// Local variables /////
 
@@ -34,7 +40,6 @@ function newContext() {
 	// Contains modules being resolved currently.
 	// This allows us to detect circular dependencies.
 	var resolving = [];
-
 	
 
 	//// Public API ////
@@ -45,13 +50,31 @@ function newContext() {
 		loadModule: loadModule,
 		main: loadMainModule,
 		singleModule: singleModule,
-		fileFilters: fileFilters
+		fileFilters: fileFilters,
+		getIdSeparator: getIdSeparator
 	};
 
 	//////////////////
 
-	function scanForFiles(baseDir, excludeFn) {
-		excludeFn = excludeFn || function(fname) { return false; };
+	function getIdSeparator() {
+		return idSeparator;
+	}
+
+	function scanForFiles(opts) {
+		var baseDir;
+		var idPrefix;
+		var excludeFn;
+
+		if (isString(opts)) {
+			// Just assume the opts is the file path, all other options are default
+			baseDir = opts;
+			opts = {};
+		} else {
+			baseDir = opts.baseDir;
+		}
+
+		idPrefix = opts.idPrefix;
+		excludeFn = opts.excludeFn || function(fname) { return false; };
 
 		var baseDirLen = baseDir.length;
 
@@ -63,7 +86,7 @@ function newContext() {
 			var d = name.substr(baseDirLen+1);
 			if (!excludeFn(d)) {
 				var m = require(name);
-				addMapping(m, d);
+				addMapping(m, idPrefix, d);
 				included.push(name);
 			}
 		});
@@ -71,8 +94,8 @@ function newContext() {
 		return included;
 	}
 
-	function addMapping(m, dir) {
-		var id = m.id || defaultId(dir);
+	function addMapping(m, idPrefix, dir) {
+		var id = buildModuleId(idPrefix, dir);
 		var deps = m.import || [];
 		var init = m.init;
 		var isMain = m.isMain;
@@ -197,12 +220,15 @@ function newContext() {
 		return id.toLowerCase();
 	}
 
-	function defaultId(dir) {
-		var normalized = dir.replace(/\//g, '.');
-		if (strEndsWith(normalized, '.js')) {
-			normalized = normalized.substr(0, normalized.length - '.js'.length);
+	function buildModuleId(idPrefix, dir) {
+		var id = dir.replace(/\//g, idSeparator);
+		if (strEndsWith(id, '.js')) {
+			id = id.substr(0, id.length - '.js'.length);
 		}
-		return normalized;
+		if (idPrefix) {
+			id = idPrefix + idSeparator + id;
+		}
+		return id;
 	}
 
 	function findSimilarMappings(id) {
