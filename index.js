@@ -51,13 +51,19 @@ function newContext(opts) {
 		main: loadMainModule,
 		singleModule: singleModule,
 		fileFilters: fileFilters,
-		getIdSeparator: getIdSeparator
+		getIdSeparator: getIdSeparator,
+		printDependencies: printDependencies,
+		getMainModuleId: getMainModuleId
 	};
 
 	//////////////////
 
 	function getIdSeparator() {
 		return idSeparator;
+	}
+
+	function getMainModuleId() {
+		return mainModule;
 	}
 
 	function scanForFiles(opts) {
@@ -241,6 +247,14 @@ function newContext(opts) {
 			}
 		};
 		return ret;
+	}
+
+	function printDependencies(id, prefix) {
+		prefix = prefix || '';
+		console.log(prefix + id);
+		mappings[normalizeId(id)].deps.map(function(dep) {
+			printDependencies(dep.id, prefix + '--');
+		});
 	}
 
 };

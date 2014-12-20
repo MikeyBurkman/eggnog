@@ -1,7 +1,7 @@
 {
   "name": "eggnog",
   "description": "Simple dependency injection for NodeJs",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "dependencies": {
     "glob": "^4.3.2",
     "levenshtein": "^1.0.5"
