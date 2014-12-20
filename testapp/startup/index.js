@@ -1,5 +1,6 @@
 module.exports = {
 	id: 'appStart',
+	isMain: true,
 	deps: [{
 		id: 'services.messageService',
 		as: 'messageService'

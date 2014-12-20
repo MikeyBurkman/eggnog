@@ -6,6 +6,7 @@ module.exports = function() {
 	//// Local variables /////
 
 	var mappings = {};
+	var mainModule = undefined;
 
 	// Contains modules already resolved (so we don't call init twice)
 	var resolved = {}; 
@@ -15,7 +16,8 @@ module.exports = function() {
 	return {
 		scanForFiles: scanForFiles,
 		addMapping: addMapping,
-		loadModule: loadModule
+		loadModule: loadModule,
+		startApp: startApp
 	};
 
 	//////////////////
@@ -42,6 +44,7 @@ module.exports = function() {
 		var id = m.id || defaultId(dir);
 		var deps = m.deps || [];
 		var init = m.init;
+		var isMain = m.isMain;
 
 		var normId = normalizeId(id);
 
@@ -71,6 +74,13 @@ module.exports = function() {
 			deps: deps,
 			init: init
 		};
+
+		if (isMain) {
+			if (mainModule) {
+				throw 'Could not make [' + id + '] the main module; [' + mainModule + '] was already defined as the main module';
+			}
+			mainModule = id;
+		}
 	}
 
 	function loadModule(id, parent) {
@@ -100,6 +110,13 @@ module.exports = function() {
 		}
 
 		return resolved[normId];
+	}
+
+	function startApp() {
+		if (!mainModule) {
+			throw 'No main module was found, cannot start the app';
+		}
+		return loadModule(mainModule);
 	}
 
 	// IDs are not case-sensitive, but we need to make sure that resolved IDs are the same case
