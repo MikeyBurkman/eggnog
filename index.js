@@ -62,7 +62,7 @@ function newContext() {
 		filenames.map(function(name) {
 			var d = name.substr(baseDirLen+1);
 			if (!excludeFn(d)) {
-				var m = require('./' + name);
+				var m = require(name);
 				addMapping(m, d);
 				included.push(name);
 			}
