@@ -1,6 +1,9 @@
 module.exports = {
 	id: 'appStart',
-	deps: ['messageService'],
+	deps: [{
+		id: 'services.messageService',
+		as: 'messageService'
+	}],
 	init: init
 };
 
@@ -9,4 +12,6 @@ function init(deps) {
 	var messageService = deps.messageService;
 
 	console.log('result of calling messageService.something: ', messageService.something());
+
+	return true;
 }

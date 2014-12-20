@@ -1,6 +1,8 @@
 module.exports = {
-	id: 'messageService',
-	deps: ['threadService'],
+	deps: [{
+		id: 'services.threadService',
+		as: 'threadService'
+	}],
 	init: init
 };
 

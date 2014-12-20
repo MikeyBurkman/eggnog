@@ -1,5 +1,4 @@
 module.exports = {
-	id: 'threadService',
 	dependencies: [],
 	init: init
 };
