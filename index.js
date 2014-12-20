@@ -1,5 +1,6 @@
 
 var glob = require('glob');
+var levenshtein = require('levenshtein');
 
 module.exports = function() {
 
@@ -92,6 +93,10 @@ module.exports = function() {
 			if (parent) {
 				msg += ' in dependencies for [' + parent.id + ']';
 			}
+			var possible = findSimilarMappings(id);
+			if (possible.length > 0) {
+				msg += '; maybe you meant [' + possible.join(', ') + ']?'
+			}
 			throw msg;
 		}
 
@@ -130,7 +135,20 @@ module.exports = function() {
 			normalized = normalized.substr(0, normalized.length - '.js'.length);
 		}
 		return normalized;
-	} 
+	}
+
+	function findSimilarMappings(id) {
+		var threshold = 5;
+		var ret = [];
+		for (x in mappings) {
+			var mId = mappings[x].id;
+			var dist = lDist(id, mId);
+			if (dist < 5) {
+				ret.push(mId);
+			}
+		};
+		return ret;
+	}
 
 	function strEndsWith(str, val) {
 		var slen = str.length;
@@ -141,6 +159,10 @@ module.exports = function() {
 
 	function isString(o) {
 		return typeof o === 'string';
+	}
+
+	function lDist(str1, str2) {
+		return new levenshtein(str1, str2).distance;
 	}
 
 };

@@ -3,7 +3,7 @@
 	"version": "0.0.1",
 	"dependencies": {
  		"glob": "4.3.x",
- 		"q": "1.1.x"
+ 		"levenshtein": "1.0.x"
 	},
 	"engines": {
 		"node": ">=0.10.0"
