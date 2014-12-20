@@ -58,14 +58,17 @@ function newContext() {
 		var searchDir = baseDir + "/**/*.js";
 		var filenames = glob.sync(searchDir);
 
+		var included = [];
 		filenames.map(function(name) {
 			var d = name.substr(baseDirLen+1);
 			if (!excludeFn(d)) {
 				var m = require('./' + name);
 				addMapping(m, d);
+				included.push(name;)
 			}
 		});
 		
+		return included;
 	}
 
 	function addMapping(m, dir) {
@@ -87,6 +90,7 @@ function newContext() {
 
 		deps = deps.map(function(d) {
 			if (isString(d)) {
+				// Can pass in a single string, in which case the alias and the id are both the string
 				return {
 					id: d,
 					as: d
@@ -105,7 +109,8 @@ function newContext() {
 
 		if (isMain) {
 			if (mainModule) {
-				throw 'Could not make [' + id + '] the main module; [' + mainModule + '] was already defined as the main module';
+				throw 'Could not make [' + id + '] the main module; [' + mainModule + 
+														'] was already defined as the main module';
 			}
 			mainModule = id;
 		}
@@ -116,7 +121,6 @@ function newContext() {
 	function loadModule(id, parent) {
 		var normId = normalizeId(id);
 		var m = mappings[normId];
-
 
 		if (!m) {
 			var msg = 'Could not find dependency [' + id + ']'
@@ -130,8 +134,10 @@ function newContext() {
 			throw msg;
 		}
 
+		// Only resolve each module if we haven't already
 		if (!resolved[normId]) {
-			// TODO Detect circular dependencies
+
+			// Detect circular dependencies --> see if were already trying to resolve this id
 			if (contains(resolving, normId)) {
 				resolving.push(normId); // Add it to make the message better
 				while (resolving[0] !== normId) {
@@ -155,9 +161,10 @@ function newContext() {
 				resolvedDeps[depAlias] = loadModule(depId, m);
 			});
 
-			// This ID resolved, so pop the last item (this) from the resolving stack
+			// This ID resolved, so pop the last item (normId) from the resolving stack
 			resolving.pop();
 
+			// Mark that we've resolved this module
 			resolved[normId] = m.init(resolvedDeps);
 		}
 
@@ -165,6 +172,7 @@ function newContext() {
 	}
 
 	function singleModule(fname, imports) {
+		imports = imports || {};
 		for (var importId in imports) {
 			var val = imports[importId];
 			addMapping({
