@@ -64,10 +64,10 @@ function newContext() {
 			if (!excludeFn(d)) {
 				var m = require('./' + name);
 				addMapping(m, d);
-				included.push(name;)
+				included.push(name);
 			}
 		});
-		
+
 		return included;
 	}
 
