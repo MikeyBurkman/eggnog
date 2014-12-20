@@ -2,7 +2,22 @@
 var glob = require('glob');
 var levenshtein = require('levenshtein');
 
-module.exports = function() {
+var fileFilters = {
+	onlyIndexJs: function(fname) {
+		return !strEndsWith(fname, '/index.js');
+	},
+	notIndexJs: function(fname) {
+		return strEndsWith(fname, '/index.js');
+	}
+};
+
+module.exports = {
+	newContext: newContext, 
+	fileFilters: fileFilters
+};
+
+
+function newContext() {
 
 	//// Local variables /////
 
@@ -20,13 +35,17 @@ module.exports = function() {
 	// This allows us to detect circular dependencies.
 	var resolving = [];
 
+	
+
 	//// Public API ////
 
 	return {
 		scanForFiles: scanForFiles,
 		addMapping: addMapping,
 		loadModule: loadModule,
-		startApp: startApp
+		main: loadMainModule,
+		singleModule: singleModule,
+		fileFilters: fileFilters
 	};
 
 	//////////////////
@@ -77,7 +96,7 @@ module.exports = function() {
 			}
 		});
 
-		mappings[normId] = {
+		var mapping = mappings[normId] = {
 			id: id,
 			dir: dir,
 			deps: deps,
@@ -90,6 +109,8 @@ module.exports = function() {
 			}
 			mainModule = id;
 		}
+
+		return mapping;
 	}
 
 	function loadModule(id, parent) {
@@ -143,9 +164,22 @@ module.exports = function() {
 		return resolved[normId];
 	}
 
-	function startApp() {
+	function singleModule(fname, imports) {
+		for (var importId in imports) {
+			var val = imports[importId];
+			addMapping({
+				id: importId,
+				init: function() { return val; }
+			});
+		}
+		var m = require(fname);
+		var mapping = addMapping(m, fname);
+		return loadModule(mapping.id);
+	}
+
+	function loadMainModule() {
 		if (!mainModule) {
-			throw 'No main module was found, cannot start the app';
+			throw 'No main module was found';
 		}
 		return loadModule(mainModule);
 	}
@@ -175,28 +209,28 @@ module.exports = function() {
 		return ret;
 	}
 
-	function strEndsWith(str, val) {
-		var slen = str.length;
-		var vlen = val.length;
-		var suffix = str.substr(slen-vlen, vlen);
-		return (suffix == val);
-	}
-
-	function contains(arr, obj) {
-		for (var i in arr) {
-			if (arr[i] === obj) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	function isString(o) {
-		return typeof o === 'string';
-	}
-
-	function lDist(str1, str2) {
-		return new levenshtein(str1, str2).distance;
-	}
-
 };
+
+function strEndsWith(str, val) {
+	var slen = str.length;
+	var vlen = val.length;
+	var suffix = str.substr(slen-vlen, vlen);
+	return (suffix == val);
+}
+
+function contains(arr, obj) {
+	for (var i in arr) {
+		if (arr[i] === obj) {
+			return true;
+		}
+	}
+	return false;
+}
+
+function isString(o) {
+	return typeof o === 'string';
+}
+
+function lDist(str1, str2) {
+	return new levenshtein(str1, str2).distance;
+}

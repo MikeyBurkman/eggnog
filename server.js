@@ -1,9 +1,12 @@
 
-var NOD = require('./index.js')();
+var eggnog = require('./eggnog.js');
 
-NOD.scanForFiles('./testapp'); // Load all files in ./testapp
+// First demonstrate how an app might use eggnog.
+// Create a new eggnog context, and load in all files in the app diretory
+var context = eggnog.newContext();
+context.scanForFiles('./testapp'); // Load all files in ./testapp
 
-// This is the module to start in. Returns the return value of appstart.init()
-//var startup = NOD.loadModule('appstart');
-var startup = NOD.startApp();
+// Assuming one of those modules loaded was desginated as a main module, we can do this.
+// The return value is the return value of the init() method on the main module.
+var startup = context.main();
 console.log('Startup successful: ', startup);
