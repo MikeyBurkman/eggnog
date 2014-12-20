@@ -6,11 +6,19 @@ module.exports = function() {
 
 	//// Local variables /////
 
+	// Levenshtein distance between IDs when a missing dependency is found.
+	// Any IDs within this distance will be suggested.
+	var suggestionThreshold = 5;
+
 	var mappings = {};
 	var mainModule = undefined;
 
 	// Contains modules already resolved (so we don't call init twice)
 	var resolved = {}; 
+
+	// Contains modules being resolved currently.
+	// This allows us to detect circular dependencies.
+	var resolving = [];
 
 	//// Public API ////
 
@@ -88,6 +96,7 @@ module.exports = function() {
 		var normId = normalizeId(id);
 		var m = mappings[normId];
 
+
 		if (!m) {
 			var msg = 'Could not find dependency [' + id + ']'
 			if (parent) {
@@ -102,6 +111,20 @@ module.exports = function() {
 
 		if (!resolved[normId]) {
 			// TODO Detect circular dependencies
+			if (contains(resolving, normId)) {
+				resolving.push(normId); // Add it to make the message better
+				while (resolving[0] !== normId) {
+					// Remove any past dependencies, just to make the message simpler.
+					// This will show exactly where the circular dependency is.
+					// (Just remove it and look at the message to understand why it's here.)
+					resolving.shift();
+				}
+				var msg = 'Circular dependency detected! [' + resolving.join(' -> ') + ']';
+				throw msg;
+			}
+
+			// Currently resolving this id
+			resolving.push(normId);
 
 			var deps = m.deps;
 			var resolvedDeps = {};
@@ -110,6 +133,9 @@ module.exports = function() {
 				var depAlias = dep.as;
 				resolvedDeps[depAlias] = loadModule(depId, m);
 			});
+
+			// This ID resolved, so pop the last item (this) from the resolving stack
+			resolving.pop();
 
 			resolved[normId] = m.init(resolvedDeps);
 		}
@@ -138,12 +164,11 @@ module.exports = function() {
 	}
 
 	function findSimilarMappings(id) {
-		var threshold = 5;
 		var ret = [];
 		for (x in mappings) {
 			var mId = mappings[x].id;
 			var dist = lDist(id, mId);
-			if (dist < 5) {
+			if (dist < suggestionThreshold) {
 				ret.push(mId);
 			}
 		};
@@ -155,6 +180,15 @@ module.exports = function() {
 		var vlen = val.length;
 		var suffix = str.substr(slen-vlen, vlen);
 		return (suffix == val);
+	}
+
+	function contains(arr, obj) {
+		for (var i in arr) {
+			if (arr[i] === obj) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	function isString(o) {
