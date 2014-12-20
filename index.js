@@ -42,7 +42,7 @@ module.exports = function() {
 
 	function addMapping(m, dir) {
 		var id = m.id || defaultId(dir);
-		var deps = m.deps || [];
+		var deps = m.import || [];
 		var init = m.init;
 		var isMain = m.isMain;
 

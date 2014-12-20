@@ -1,11 +1,14 @@
 module.exports = {
-	deps: ['services.threadService'],
+	import: [{
+		id: 'services.threadService',
+		as: 'threadService'
+	}],
 	init: init
 };
 
-function init(deps) {
-	var threadService = deps['services.threadService'];
-	console.log('message service! ', deps);
+function init(imports) {
+	var threadService = imports.threadService;
+	console.log('message service! ', imports);
 
 	return {
 		something: function() {

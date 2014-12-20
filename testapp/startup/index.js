@@ -1,16 +1,16 @@
 module.exports = {
 	id: 'appStart',
 	isMain: true,
-	deps: [{
+	import: [{
 		id: 'services.messageService',
 		as: 'messageService'
 	}],
 	init: init
 };
 
-function init(deps) {
-	console.log('appstart! ', deps);
-	var messageService = deps.messageService;
+function init(imports) {
+	console.log('appstart! ', imports);
+	var messageService = imports.messageService;
 
 	console.log('result of calling messageService.something: ', messageService.something());
 

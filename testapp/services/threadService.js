@@ -1,10 +1,10 @@
 module.exports = {
-	dependencies: [],
+	import: [],
 	init: init
 };
 
-function init(deps) {
-	console.log('thread service! ', deps);
+function init(imports) {
+	console.log('thread service! ', imports);
 	return {
 		stuff: 'This is some stuff!'
 	};
