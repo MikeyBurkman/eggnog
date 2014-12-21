@@ -20,15 +20,19 @@ Importing dependencies with require() has several issues:
 ### What do these declarations at the top of every file look like?
 ```
 module.exports = {
-  import: [{
-    id: 'utils.logger',
-    as: 'log'
-  }],
+  import: [
+    {
+      id: 'utils.logger', // Required module's ID
+      as: 'log' // An alias used only in the imports object below
+    }, 
+    'services.myService' // If no alias is needed, just list the ID as a string
+  ],
   init: init
 };
 
 function init(imports) {
   var log = imports.log;
+  var myService = imports['services.myService'];
   ...
   return {
     // The return value from init() is what your module.exports 
