@@ -18,8 +18,9 @@ Importing dependencies with require() has several issues:
 
 ### What doesn't eggnog do?
   - Everything that isn't listed above.
-  -   It is as un-opinionated as possible.
-  -   Build any type of application you like with it, big or small, CLI or web app.
+  - It is as un-opinionated as possible.
+  - Build any type of application you like with it, big or small, CLI or web app
+  - Does not interfere with popular frameworks like Express
 
 ### What do these declarations at the top of every file look like?
 ```
