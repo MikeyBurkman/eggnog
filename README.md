@@ -10,19 +10,20 @@ Importing dependencies with require() has several issues:
   - A clear dependency graph is not available, and circular dependencies can sneak in
 
 ### What does eggnog do?
+  - Provide a standard and lightweight convention to define modules and their depencies.
   - Files are globally identifiable by their directory structure relative to the root. An ID might be 'utils.logger'.
-  - Files list their dependency information at the top of every file. Another file in another part of the code might import 'utils.logger'
+  - Files list their dependency information at the top of every file. Another file in another part of the app might import 'utils.logger'.
   - Most files only need to follow a convention to work with eggnog, and do not require any extra dependencies of their own. (In this way, you are not locked in to the eggnog tool for loading files.)
   - eggnog detects circular dependencies immediately
   - eggnog allows you to print dependency graphs to the console
 
-### What doesn't eggnog do?
+### What does eggnog NOT do?
   - Everything that isn't listed above.
   - It is as un-opinionated as possible.
-  - Build any type of application you like with it, big or small, CLI or web app
-  - Does not interfere with popular frameworks like Express
+  - Build any type of application you like with it, big or small, CLI or web app.
+  - Does not interfere with popular frameworks like Express.
 
-### What do these declarations at the top of every file look like?
+### What do these standard file conventions look like?
 ```
 module.exports = {
   import: [
