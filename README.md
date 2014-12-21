@@ -21,22 +21,18 @@ Importing dependencies with require() has several issues:
 ```
 module.exports = {
   import: [
-    {
-      id: 'utils.logger', // Required module's ID
-      as: 'log' // An alias used only in the imports object below
-    }, 
-    'services.myService' // If no alias is needed, just list the ID as a string
+    'utils.logger',
+    'services.myService'
   ],
   init: init
 };
 
 function init(imports) {
-  var log = imports.log;
+  var log = imports['utils.logger'];
   var myService = imports['services.myService'];
   ...
   return {
-    // The return value from init() is what your module.exports 
-    //   would have originally been
+    // The return value from init() is what your module.exports would have originally been
   };
 }
 ```
@@ -69,6 +65,23 @@ module.exports = {
 ```
 
 Only after calling `context.main()` will the main module be loaded. This will load all of its dependencies first, and all of their dependencies, and so on until the app has been fully loaded. A module is considered loaded onces its init() method has been called once.
+
+### Import aliases
+To make it a little easier to use the imports object, each import my be given an alias:
+```
+module.exports = {
+  import: [{
+    id: 'utils.logger',
+    as: 'log'
+  }],
+  init: init
+};
+
+function init(imports) {
+  var log = imports.log;
+  ...
+}
+```
 
 ### Printing Dependency Tree
 ```
