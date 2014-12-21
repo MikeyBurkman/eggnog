@@ -67,7 +67,7 @@ module.exports = {
 Only after calling `context.main()` will the main module be loaded. This will load all of its dependencies first, and all of their dependencies, and so on until the app has been fully loaded. A module is considered loaded onces its init() method has been called once.
 
 ### Import aliases
-To make it a little easier to use the imports object, each import my be given an alias:
+To make it a little easier to use the imports object, each import may be given an alias:
 ```
 module.exports = {
   import: [{
@@ -83,7 +83,8 @@ function init(imports) {
 }
 ```
 
-### Printing Dependency Tree
+### Printing Dependency Graph
+The dependency graph can be printed to console.log for a particular module, or for the specified main module in the context:
 ```
 var context = ...
 context.printDependencies('utils.logger');
@@ -102,5 +103,5 @@ See https://github.com/MikeyBurkman/eggnog-exampleapp for example usage
 
 ##### Documentation TODO
   - Discuss other methods available on context
-  - Discuss how to unit test by loading individual files
-  - Using multiple eggnog contexts to build an application, which allows certain files to be essentially private to a module, and even allows for third-parties tools to be imported as eggnog contexts.
+  - How to unit test by loading individual files and mock dependencies in one call
+  - How to use multiple eggnog contexts to build an application, which allows certain files to be essentially private to a module, and even allows for third-parties tools to be imported as eggnog contexts.
