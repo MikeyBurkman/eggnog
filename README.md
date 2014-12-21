@@ -11,7 +11,7 @@ Importing dependencies with require() has several issues:
 
 ### What does eggnog do?
   - Files are globally identifiable by their directory structure relative to the root. An ID might be 'utils.logger'.
-  - Files list their dependency information at the top of every file. A dependency might be 'utils.logger'
+  - Files list their dependency information at the top of every file. Another file in another part of the code might import 'utils.logger'
   - Most files only need to follow a convention to work with eggnog, and do not require any extra dependencies of their own
   - eggnog detects circular dependencies immediately
   - eggnog allows you to print dependency graphs to the console
