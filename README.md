@@ -1,16 +1,18 @@
 # eggnog
-eggnog is a simple, lightweight module framework for NodeJs. 
+eggnog is a simple, lightweight module and dependency injection framework for NodeJs. 
 
 NPM: https://www.npmjs.com/package/eggnog
 
 ### What's wrong with require()?
 Importing dependencies with require() has several issues:
-  - Dependencies can be scattered across a file
+  - You are directly importing the implementation file, making unit testing much harder.
+  - Calls to require() can be scattered across a file, making it difficult to find which files depend on which
   - Paths to local files are always relative, meaning require('../../utils/logger') is not uncommon. These are ugly and difficult to maintain.
-  - A clear dependency graph is not available, and circular dependencies can sneak in
+  - A clear dependency graph is not available, and circular dependencies can sneak in unnoticed.
 
 ### What does eggnog do?
   - Provide a standard and lightweight convention to define modules and their depencies.
+  - Injects dependencies, rather than having files fetch dependencies, making unit testing much simpler.
   - Files are globally identifiable by their directory structure relative to the root. An ID might be 'utils.logger'.
   - Files list their dependency information at the top of every file. Another file in another part of the app might import 'utils.logger'.
   - Most files only need to follow a convention to work with eggnog, and do not require any extra dependencies of their own. (In this way, you are not locked in to the eggnog tool for loading files.)
