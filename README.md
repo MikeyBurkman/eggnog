@@ -45,7 +45,9 @@ function init(imports) {
 }
 ```
 
-In this way, if your logger utility is in {root}/utils/logger.js, then eggnog will automatically pick it up and make it available to all other files under the ID 'utils.logger'
+All dependencies listed in the import array will available on the imports object passed to the init() function. The init() function will only be called once all the imports have been resolved.
+
+In this example, your logger utility is assumed to be in {root}/utils/logger.js, and so eggnog will automatically pick it up and make it available with the ID 'utils.logger'.
 
 ### How do I start my app now?
   - eggnog is based around the creation of a context, which contains all mappings of module IDs to the files.
