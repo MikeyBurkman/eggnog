@@ -4,7 +4,7 @@ eggnog is a simple, lightweight module and dependency injection framework for No
 NPM: https://www.npmjs.com/package/eggnog
 
 ### What's wrong with require()?
-Importing dependencies with require() has several issues:
+Importing local dependencies (those within your application, not listed in package.json) with require() has several issues:
   - You are directly importing the implementation file, making unit testing much harder.
   - Calls to require() can be scattered across a file, making it difficult to find which files depend on which
   - Paths to local files are always relative, meaning require('../../utils/logger') is not uncommon. These are ugly and difficult to maintain.
