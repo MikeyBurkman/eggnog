@@ -25,6 +25,8 @@ function newContext(opts) {
 
 	var idSeparator = opts.idSeparator || '.';
 
+	var scopes = ['singleton', 'instance'];
+
 	//// Local variables /////
 
 	// Levenshtein distance between IDs when a missing dependency is found.
@@ -105,6 +107,16 @@ function newContext(opts) {
 		var deps = m.import || [];
 		var init = m.init;
 		var isMain = m.isMain;
+		var scope = m.scope || 'singleton'
+
+		if (!contains(scopes, scope)) {
+			var msg = 'Unrecognized scope: [' + scope + '] for ID [' + id + ']';
+			var similar = findSimilar(scope, scopes, suggestionThreshold);
+			if (similar.length > 0) {
+				msg += '; did you mean? [' + similar.join(', ') + ']';
+			}
+			throw msg;
+		}
 
 		var normId = normalizeId(id);
 
@@ -133,6 +145,7 @@ function newContext(opts) {
 			id: id,
 			dir: dir,
 			deps: deps,
+			scope: scope,
 			init: init
 		};
 
@@ -163,8 +176,13 @@ function newContext(opts) {
 			throw msg;
 		}
 
+		var moduleResult;
+
 		// Only resolve each module if we haven't already
-		if (!resolved[normId]) {
+		if (resolved[normId]) {
+			moduleResult = resolved[normId];
+
+		} else {
 
 			// Detect circular dependencies --> see if were already trying to resolve this id
 			if (contains(resolving, normId)) {
@@ -193,11 +211,16 @@ function newContext(opts) {
 			// This ID resolved, so pop the last item (normId) from the resolving stack
 			resolving.pop();
 
-			// Mark that we've resolved this module
-			resolved[normId] = m.init(resolvedDeps);
+			moduleResult = m.init(resolvedDeps);
+
+			// Mark that we've resolved this module.
+			// If a module is a singleton, we cache it so we don't re-resolve it next time
+			if (m.scope === 'singleton') {
+				resolved[normId] = moduleResult;
+			}
 		}
 
-		return resolved[normId];
+		return moduleResult;
 	}
 
 	function singleModule(fname, imports) {
@@ -238,15 +261,11 @@ function newContext(opts) {
 	}
 
 	function findSimilarMappings(id) {
-		var ret = [];
+		var ids = [];
 		for (x in mappings) {
-			var mId = mappings[x].id;
-			var dist = lDist(id, mId);
-			if (dist < suggestionThreshold) {
-				ret.push(mId);
-			}
+			ids.push(mappings[x].id);
 		};
-		return ret;
+		return findSimilar(id, ids, suggestionThreshold);
 	}
 
 	function printDependencies(id, prefix) {
@@ -258,6 +277,18 @@ function newContext(opts) {
 	}
 
 };
+
+function findSimilar(str, arr, threshold) {
+	var ret = [];
+	for (var i in arr) {
+		var x = arr[i];
+		var dist = lDist(str, x);
+		if (dist < threshold) {
+			ret.push(x);
+		}
+	}
+	return ret;
+}
 
 function strEndsWith(str, val) {
 	var slen = str.length;
