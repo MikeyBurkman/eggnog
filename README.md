@@ -17,6 +17,7 @@ Importing local dependencies (those within your application, not listed in packa
   - Files list their dependency information at the top of every file. Another file in another part of the app might import 'utils.logger'.
   - Most files only need to follow a convention to work with eggnog, and do not require any extra dependencies of their own. (In this way, you are not locked in to the eggnog tool for loading files.)
   - eggnog detects circular dependencies immediately
+  - eggnog allows for some simple scoping of modules
   - eggnog allows you to print dependency graphs to the console
 
 ### What does eggnog NOT do?
@@ -93,6 +94,30 @@ function init(imports) {
 }
 ```
 
+### Scoping
+Individual modules can have either `singleton` or `instance` scoping. 
+
+##### Singleton
+Singleton scoping is the default, and means that only one copy of the module exists for the entire application. More precisely, the init() function will only be called once per context. 
+
+##### Instance
+With instance scoping, the init() function will be run once for every module that depends upon it. Use this if you want a module to have state, but do not want it shared across the application. Do note that NodeJs will only "load" each file once. It is the init() function that will be called multiple times.
+
+In the below example, each module that imports this module will get its own counter. If the scope were singleton (or not provided), then all modules that import this one would share the same counter.
+```
+module.exports = {
+  scope: 'instance',
+  init: init
+};
+
+function init(imports) {
+  var count = 0;
+  return {
+    increment: function() { return count++; }
+  };
+}
+```
+
 ### Printing Dependency Graph
 The dependency graph can be printed to console.log for a particular module, or for the specified main module in the context:
 ```
@@ -106,7 +131,7 @@ context.printDependencies(context.getMainModuleId());
 See https://github.com/MikeyBurkman/eggnog-exampleapp for example usage
 
 ### Misc Notes
-  - The init() function on each module will be called at most once PER CONTEXT. It will not be called at all if that module is not needed to run the app. (It's either not the starting module, or is not required by the starting module or any of its dependencies.)
+  - The init() function will only be called if the module is either the starting module, or is a transitive dependency of the starting module.
   - Module IDs follow the directory structure, though are (by default) period-deliminated. So if file 'myapp/utils/logger' is loaded with 'myapp' as the root, then the ID becomes 'utils.logger'.
   - When listing dependencies, you may either list just a string (the ID), or a string and alias, as listed in the examples above. The alias is only used when accessing the dependency from the imports object passed to init().
   - IDs are case-insensitive, though the imports object passed to init() require the same casing as you specify in the dependencies. So you could import 'utils.LOGger', that will work, but you would have to access it with imports['utils.LOGger']. Aliases are case sensitive as well.
