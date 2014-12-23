@@ -1,7 +1,8 @@
-# eggnog
+## eggnog ##
 eggnog is a simple, lightweight module and dependency injection framework for NodeJs. 
 
 NPM: https://www.npmjs.com/package/eggnog
+
 Current Version: 0.0.6
 
 ### What's wrong with require()?
@@ -28,7 +29,7 @@ Importing local dependencies (those within your application, not listed in packa
   - Does not interfere with popular frameworks like Express.
 
 ### What do these standard file conventions look like?
-```
+```js
 module.exports = {
   import: [
     'utils.logger',
@@ -55,7 +56,7 @@ In this example, your logger utility is assumed to be in {root}/utils/logger.js,
   - eggnog is based around the creation of a context, which contains all mappings of module IDs to the files.
   - In your entry point (often server.js), you will create a new context, point it to your root directory, and then tell it to start your app.
 
-```
+```js
 var eggnog = require('eggnog');
 
 var context = eggnog.newContext();
@@ -67,7 +68,7 @@ context.main();
 This will scan for all JS files in the current directory and subdirectories, and add them to the context. At this point, none of the init() methods in any files have been run, as they are only evaluated at the point they need to be.
 
 The `context.main()` method will attempt to start the application from the module that declared itself the main module. There can only be one of these in the context at a time, and an error will be thrown if a second one is added. The main module can be declared as such:
-```
+```js
 module.exports = {
   isMain: true,
   import: [ ... ],
@@ -80,7 +81,7 @@ Only after calling `context.main()` will the main module be loaded. This will lo
 
 ### Import aliases
 To make it a little easier to use the imports object, each import may be given an alias:
-```
+```js
 module.exports = {
   import: [{
     id: 'utils.logger',
@@ -105,7 +106,7 @@ Singleton scoping is the default, and means that only one copy of the module exi
 With instance scoping, the init() function will be run once for every module that depends upon it. Use this if you want a module to have state, but do not want it shared across the application. Do note that NodeJs will only "load" each file once. It is the init() function that will be called multiple times.
 
 In the below example, each module that imports this module will get its own counter. If the scope were singleton (or not provided), then all modules that import this one would share the same counter.
-```
+```js
 module.exports = {
   scope: 'instance',
   init: init
@@ -121,7 +122,7 @@ function init(imports) {
 
 ### Printing Dependency Graph
 The dependency graph can be printed to console.log for a particular module, or for the specified main module in the context:
-```
+```js
 var context = ...
 context.printDependencies('utils.logger');
 // OR to print everything used by the app:
