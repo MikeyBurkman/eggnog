@@ -43,7 +43,8 @@ function init(imports) {
   var myService = imports['services.myService'];
   ...
   return {
-    // The return value from init() is what your module.exports would have originally been
+    // The return value from init() is what your module.exports 
+    //   would have originally been
   };
 }
 ```
@@ -67,6 +68,8 @@ context.main();
 
 This will scan for all JS files in the current directory and subdirectories, and add them to the context. At this point, none of the init() methods in any files have been run, as they are only evaluated at the point they need to be.
 
+Note: The base directory named passed to scanForFiles() will never be used in the IDs of the modules. Otherwise, Eggnog would have no way of knowing which folders should be part of the ID. (This may be change in the future.)
+
 The `context.main()` method will attempt to start the application from the module that declared itself the main module. There can only be one of these in the context at a time, and an error will be thrown if a second one is added. The main module can be declared as such:
 ```js
 module.exports = {
@@ -78,23 +81,6 @@ module.exports = {
 ```
 
 Only after calling `context.main()` will the main module be loaded. This will load all of its dependencies first, and all of their dependencies, and so on until the app has been fully loaded. A module is considered loaded onces its init() method has been called once.
-
-### Import aliases
-To make it a little easier to use the imports object, each import may be given an alias:
-```js
-module.exports = {
-  import: [{
-    id: 'utils.logger',
-    as: 'log'
-  }],
-  init: init
-};
-
-function init(imports) {
-  var log = imports.log;
-  ...
-}
-```
 
 ### Scoping
 Individual modules can have either `singleton` or `instance` scoping. 
@@ -135,8 +121,7 @@ See https://github.com/MikeyBurkman/eggnog-exampleapp for example usage
 ### Misc Notes
   - The init() function will only be called if the module is either the starting module, or is a transitive dependency of the starting module.
   - Module IDs follow the directory structure, though are (by default) period-deliminated. So if file 'myapp/utils/logger' is loaded with 'myapp' as the root, then the ID becomes 'utils.logger'.
-  - When listing dependencies, you may either list just a string (the ID), or a string and alias, as listed in the examples above. The alias is only used when accessing the dependency from the imports object passed to init().
-  - IDs are case-insensitive, though the imports object passed to init() require the same casing as you specify in the dependencies. So you could import 'utils.LOGger', that will work, but you would have to access it with imports['utils.LOGger']. Aliases are case sensitive as well.
+  - IDs are case-insensitive, though the imports object passed to init() require the same casing as you specify in the dependencies. So you could import 'utils.LOGger', that will work, but you would have to access it with imports['utils.LOGger'].
 
 ##### Documentation TODO
   - Discuss other methods available on context
