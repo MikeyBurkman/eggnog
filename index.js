@@ -90,7 +90,7 @@ function newContext(opts) {
 		var filenames = glob.sync(searchDir);
 
 		var included = [];
-		filenames.map(function(name) {
+		each(filenames, function(name) {
 			var d = name.substr(baseDirLen+1);
 			if (!excludeFn(d)) {
 				var m = require(name);
@@ -103,7 +103,9 @@ function newContext(opts) {
 	}
 
 	function addMapping(m, idPrefix, dir) {
-		var id = buildModuleId(idPrefix, dir);
+		// _id overrides a built ID -- internal use only
+		var id = m._id || buildModuleId(idPrefix, dir);
+
 		var deps = m.import || [];
 		var init = m.init;
 		var isMain = m.isMain;
@@ -128,18 +130,6 @@ function newContext(opts) {
 			}
 			throw msg;
 		}
-
-		deps = deps.map(function(d) {
-			if (isString(d)) {
-				// Can pass in a single string, in which case the alias and the id are both the string
-				return {
-					id: d,
-					as: d
-				};
-			} else {
-				return d;
-			}
-		});
 
 		var mapping = mappings[normId] = {
 			id: id,
@@ -200,18 +190,15 @@ function newContext(opts) {
 			// Currently resolving this id
 			resolving.push(normId);
 
-			var deps = m.deps;
 			var resolvedDeps = {};
-			deps.map(function(dep) {
-				var depId = dep.id;
-				var depAlias = dep.as;
-				resolvedDeps[depAlias] = loadModule(depId, m);
+			each(m.deps, function(dep) {
+				resolvedDeps[dep] = loadModule(dep, m);
 			});
+
+			moduleResult = m.init(resolvedDeps);
 
 			// This ID resolved, so pop the last item (normId) from the resolving stack
 			resolving.pop();
-
-			moduleResult = m.init(resolvedDeps);
 
 			// Mark that we've resolved this module.
 			// If a module is a singleton, we cache it so we don't re-resolve it next time
@@ -225,15 +212,14 @@ function newContext(opts) {
 
 	function singleModule(fname, imports) {
 		imports = imports || {};
-		for (var importId in imports) {
-			var val = imports[importId];
+		each(imports, function(val, id) {			
 			addMapping({
-				id: importId,
+				_id: id,
 				init: function() { return val; }
 			});
-		}
+		});
 		var m = require(fname);
-		var mapping = addMapping(m, fname);
+		var mapping = addMapping(m, undefined, fname);
 		return loadModule(mapping.id);
 	}
 
@@ -261,22 +247,35 @@ function newContext(opts) {
 	}
 
 	function findSimilarMappings(id) {
-		var ids = [];
-		for (x in mappings) {
-			ids.push(mappings[x].id);
-		};
+		var ids = mappings.each(function(mapping) {
+			return mapping.id;
+		});
 		return findSimilar(id, ids, suggestionThreshold);
 	}
 
+	// TODO: Would probably be more useful to also print out dependencies in reverse order.
+	// This way you could more easily see the most dependended-upon modules in the app.
 	function printDependencies(id, prefix) {
 		prefix = prefix || '';
 		console.log(prefix + id);
-		mappings[normalizeId(id)].deps.map(function(dep) {
-			printDependencies(dep.id, prefix + '--');
+
+		var mapping = mappings[normalizeId(id)];
+		each(mapping.deps, function(dep) {
+			printDependencies(dep, prefix + '--');
 		});
 	}
 
 };
+
+function each(o, fn) { // map fn that works for both arrays and objects
+	var r = [];
+	for (var x in o) {
+		if (o.hasOwnProperty(x)) {
+			r.push(fn(o[x], x));
+		}
+	}
+	return r;
+}
 
 function findSimilar(str, arr, threshold) {
 	var ret = [];

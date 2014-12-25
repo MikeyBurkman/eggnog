@@ -1,7 +1,7 @@
 {
   "name": "eggnog",
-  "description": "Simple dependency injection for NodeJs",
-  "version": "0.0.6",
+  "description": "A simple, lightweight module and dependency injection framework for NodeJs",
+  "version": "0.1.0",
   "dependencies": {
     "glob": "^4.3.2",
     "levenshtein": "^1.0.5"
@@ -12,8 +12,16 @@
   },
   "author": {
     "name": "Michael Burkman",
+    "email": "michael.burkman@gmail.com",
     "url": "https://github.com/MikeyBurkman"
   },
+  "keywords": [
+    "module",
+    "dependency",
+    "injection",
+    "di",
+    "import"
+  ],
   "engines": {
     "node": ">=0.10.0"
   },
