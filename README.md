@@ -3,7 +3,7 @@ eggnog is a simple, lightweight module and dependency injection framework for No
 
 NPM: https://www.npmjs.com/package/eggnog
 
-Current Version: 0.0.6
+Current Version: 0.1.0
 
 ### What's wrong with require()?
 Importing local dependencies (those within your application, not listed in package.json) with require() has several issues:
