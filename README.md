@@ -130,7 +130,7 @@ var mockUserDao = {
   getUser: function(userId) {
     return { /* mock user object */ };
   },
-	/// other methods that service.js uses in userDao...
+  // other methods that service.js uses from userDao from the test...
 };
 
 // Assume the file we want to test is at ./myApp/service.js
@@ -145,6 +145,7 @@ var service = eggnog.singleModule(filename, {
 Notes: 
   - eggnog is not a unit test framework. It just allows you to easily inject mock dependencies. Use a real testing framework in conjunction with eggnog.
   - It is not possible (or at least not easy) to use a mix of real and mock implementations. This is on purpose. Using real implementations of dependencies would not make this a unit test.
+  - Loading modules is cheap. Do it once for each individual test, to make sure each test is completely independent of each other.
 
 ### Examples
 See https://github.com/MikeyBurkman/eggnog-exampleapp for example usage
