@@ -3,11 +3,11 @@ eggnog is a simple, lightweight module and dependency injection framework for No
 
 NPM: https://www.npmjs.com/package/eggnog
 
-Current Version: 0.1.0
+Current Version: 0.2.0
 
 ### What's wrong with require()?
 Importing local dependencies (those within your application, not listed in package.json) with require() has several issues:
-  - You are directly importing the implementation file, making unit testing much harder.
+  - You are directly importing the implementation file, making unit testing much more difficult.
   - Calls to require() can be scattered across a file, making it difficult to find which files depend on which
   - Paths to local files are always relative, meaning require('../../utils/logger') is not uncommon. These are ugly and difficult to maintain.
   - A clear dependency graph is not available, and circular dependencies can sneak in unnoticed.
@@ -39,8 +39,8 @@ module.exports = {
 };
 
 function init(imports) {
-  var log = imports['utils.logger'];
-  var myService = imports['services.myService'];
+  var log = imports.get('utils.logger');
+  var myService = imports.get('services.myService');
   ...
   return {
     // The return value from init() is what your module.exports 
@@ -89,7 +89,11 @@ Individual modules can have either `singleton` or `instance` scoping.
 Singleton scoping is the default, and means that only one copy of the module exists for the entire application. More precisely, the init() function will only be called once per context. 
 
 ##### Instance
-With instance scoping, the init() function will be run once for every module that depends upon it. Use this if you want a module to have state, but do not want it shared across the application. Do note that NodeJs will only "load" each file once. It is the init() function that will be called multiple times.
+With instance scoping, the init() function will be run once for every module that depends upon it. Use this if you want a module to have state, but do not want it shared across the application. 
+
+Notes:
+  - It is guaranteed that one, and only one, instance of the instance-scoped module will be assigned to each module that imports it. Calling imports.get(id) multiple times in the same module will always yield the same object.
+  - NodeJs will only "load" each file once. It is the init() function that will be called multiple times.
 
 In the below example, each module that imports this module will get its own counter. If the scope were singleton (or not provided), then all modules that import this one would share the same counter.
 ```js
@@ -115,15 +119,42 @@ context.printDependencies('utils.logger');
 context.printDependencies(context.getMainModuleId());
 ```
 
+### Unit Testing
+
+Because each module defines its dependencies, but not how to find them, it is possible to manually inject mock dependencies into a single module, and then run tests on that module. eggnog makes this easy and simple:
+
+```js
+var eggnog = require('eggnog');
+
+var mockUserDao = {
+  getUser: function(userId) {
+    return { /* mock user object */ };
+  },
+	/// other methods that service.js uses in userDao...
+};
+
+// Assume the file we want to test is at ./myApp/service.js
+// Assume it has a dependency on myApp.userDao
+var filename = __dirname + '/myApp/service.js';
+var service = eggnog.singleModule(filename, {
+  'myApp.userDao': mockUserDao
+});
+// service now has the mock dao injected to it, and tests can be run against it
+```
+
+Notes: 
+  - eggnog is not a unit test framework. It just allows you to easily inject mock dependencies. Use a real testing framework in conjunction with eggnog.
+  - It is not possible (or at least not easy) to use a mix of real and mock implementations. This is on purpose. Using real implementations of dependencies would not make this a unit test.
+
 ### Examples
 See https://github.com/MikeyBurkman/eggnog-exampleapp for example usage
 
 ### Misc Notes
   - The init() function will only be called if the module is either the starting module, or is a transitive dependency of the starting module.
   - Module IDs follow the directory structure, though are (by default) period-deliminated. So if file 'myapp/utils/logger' is loaded with 'myapp' as the root, then the ID becomes 'utils.logger'.
-  - IDs are case-insensitive, though the imports object passed to init() require the same casing as you specify in the dependencies. So you could import 'utils.LOGger', that will work, but you would have to access it with imports['utils.LOGger'].
+  - IDs are case-insensitive. If you have two files who only differ by their casing, then you should probably rename one of them, because that's just bad form.
 
 ##### Documentation TODO
-  - Discuss other methods available on context
-  - How to unit test by loading individual files and mock dependencies in one call
-  - How to use multiple eggnog contexts to build an application, which allows certain files to be essentially private to a module, and even allows for third-parties tools to be imported as eggnog contexts.
+  - Other methods available on the context.
+  - File filters when loading modules.
+  - Loading multiple folders into a context by specifying a prefix.
