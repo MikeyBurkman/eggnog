@@ -195,7 +195,9 @@ function newContext(opts) {
 				resolvedDeps[dep] = loadModule(dep, m);
 			});
 
-			moduleResult = m.init(resolvedDeps);
+			var resolver = buildResolver(resolvedDeps);
+
+			moduleResult = m.init(resolver);
 
 			// This ID resolved, so pop the last item (normId) from the resolving stack
 			resolving.pop();
@@ -247,10 +249,30 @@ function newContext(opts) {
 	}
 
 	function findSimilarMappings(id) {
-		var ids = mappings.each(function(mapping) {
+		var ids = each(mappings, function(mapping) {
 			return mapping.id;
 		});
 		return findSimilar(id, ids, suggestionThreshold);
+	}
+
+	function buildResolver(resolvedDeps) {
+		return {
+			get: function(depId) {
+				if (!(resolvedDeps.hasOwnProperty(depId))) {
+					var msg = 'Could not find import [' + depId + '] from module [' + id + ']';
+					var possible = findSimilarMappings(depId);
+					if (possible.length > 0) {
+						msg += '; maybe you meant [' + possible.join(', ') + ']?'
+					}
+					throw msg;
+				}
+
+				return resolvedDeps[depId];
+			},
+			all: function() {
+				return resolvedDeps;
+			}
+		};
 	}
 
 	// TODO: Would probably be more useful to also print out dependencies in reverse order.
