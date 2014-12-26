@@ -13,6 +13,7 @@ var fileFilters = {
 
 module.exports = {
 	newContext: newContext, 
+	singleModule: singleModule,
 	fileFilters: fileFilters
 };
 
@@ -51,7 +52,6 @@ function newContext(opts) {
 		addMapping: addMapping,
 		loadModule: loadModule,
 		main: loadMainModule,
-		singleModule: singleModule,
 		fileFilters: fileFilters,
 		getIdSeparator: getIdSeparator,
 		printDependencies: printDependencies,
@@ -192,10 +192,11 @@ function newContext(opts) {
 
 			var resolvedDeps = {};
 			each(m.deps, function(dep) {
+				dep = normalizeId(dep);
 				resolvedDeps[dep] = loadModule(dep, m);
 			});
 
-			var resolver = buildResolver(resolvedDeps);
+			var resolver = buildResolver(m, resolvedDeps);
 
 			moduleResult = m.init(resolver);
 
@@ -210,19 +211,6 @@ function newContext(opts) {
 		}
 
 		return moduleResult;
-	}
-
-	function singleModule(fname, imports) {
-		imports = imports || {};
-		each(imports, function(val, id) {			
-			addMapping({
-				_id: id,
-				init: function() { return val; }
-			});
-		});
-		var m = require(fname);
-		var mapping = addMapping(m, undefined, fname);
-		return loadModule(mapping.id);
 	}
 
 	function loadMainModule() {
@@ -255,11 +243,12 @@ function newContext(opts) {
 		return findSimilar(id, ids, suggestionThreshold);
 	}
 
-	function buildResolver(resolvedDeps) {
+	function buildResolver(mapping, resolvedDeps) {
 		return {
 			get: function(depId) {
-				if (!(resolvedDeps.hasOwnProperty(depId))) {
-					var msg = 'Could not find import [' + depId + '] from module [' + id + ']';
+				var normId = normalizeId(depId);
+				if (!(resolvedDeps.hasOwnProperty(normId))) {
+					var msg = 'Could not find import [' + depId + '] from module [' + mapping.id + ']';
 					var possible = findSimilarMappings(depId);
 					if (possible.length > 0) {
 						msg += '; maybe you meant [' + possible.join(', ') + ']?'
@@ -267,7 +256,7 @@ function newContext(opts) {
 					throw msg;
 				}
 
-				return resolvedDeps[depId];
+				return resolvedDeps[normId];
 			},
 			all: function() {
 				return resolvedDeps;
@@ -288,6 +277,20 @@ function newContext(opts) {
 	}
 
 };
+
+function singleModule(fname, imports) {
+	var ctx = newContext();
+	imports = imports || {};
+	each(imports, function(val, id) {			
+		ctx.addMapping({
+			_id: id,
+			init: function() { return val; }
+		});
+	});
+	var m = require(fname);
+	var mapping = ctx.addMapping(m, undefined, fname);
+	return ctx.loadModule(mapping.id);
+}
 
 function each(o, fn) { // map fn that works for both arrays and objects
 	var r = [];
