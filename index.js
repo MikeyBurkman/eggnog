@@ -1,6 +1,7 @@
 
 var glob = require('glob');
 var levenshtein = require('levenshtein');
+var fs = require('fs');
 
 var fileFilters = {
 	onlyIndexJs: function(fname) {
@@ -24,6 +25,7 @@ function newContext(opts) {
 
 	opts = opts || {};
 
+	var externalRoot = opts.externalRoot;
 	var idSeparator = opts.idSeparator || '.';
 
 	var scopes = ['singleton', 'instance'];
@@ -32,9 +34,10 @@ function newContext(opts) {
 
 	// Levenshtein distance between IDs when a missing dependency is found.
 	// Any IDs within this distance will be suggested.
-	var suggestionThreshold = 5;
+	var suggestionThreshold = 4;
 
 	var mappings = {};
+	var extMappings = {};
 	var mainModule = undefined;
 
 	// Contains modules already resolved (so we don't call init twice)
@@ -110,15 +113,11 @@ function newContext(opts) {
 		var init = m.init;
 		var isMain = m.isMain;
 		var scope = m.scope || 'singleton'
+		var externals = m.externals || [];
 
 		if (!contains(scopes, scope)) {
 			var msg = 'Unrecognized scope: [' + scope + '] for ID [' + id + ']';
-			var similar = findSimilar(scope, scopes, suggestionThreshold);
-			if (similar.length > 0) {
-				msg += '; did you mean? [' + similar.join(', ') + ']';
-			}
-			throw msg;
-		}
+			throw buildMissingDepMsg(msg, scop, scopes);		}
 
 		var normId = normalizeId(id);
 
@@ -131,18 +130,28 @@ function newContext(opts) {
 			throw msg;
 		}
 
+		if (externals.length > 0 && !externalRoot) {
+			throw 'You must specify a root directory for external files by setting the ' +
+			      '\'externalRoot\' option in the context before you can load external dependencies';
+		}
+		each(externals, function(extId) {
+			if (!extMappings[extId]) {
+				extMappings[extId] = loadExternal(extId);
+			}
+		});
+
 		var mapping = mappings[normId] = {
 			id: id,
 			dir: dir,
 			deps: deps,
 			scope: scope,
+			externals: externals,
 			init: init
 		};
 
 		if (isMain) {
 			if (mainModule) {
-				throw 'Could not make [' + id + '] the main module; [' + mainModule + 
-														'] was already defined as the main module';
+				throw 'Could not make [' + id + '] the main module; [' + mainModule + '] was already defined as the main module';
 			}
 			mainModule = id;
 		}
@@ -160,10 +169,7 @@ function newContext(opts) {
 				msg += ' in dependencies for [' + parent.id + ']';
 			}
 			var possible = findSimilarMappings(id);
-			if (possible.length > 0) {
-				msg += '; maybe you meant [' + possible.join(', ') + ']?'
-			}
-			throw msg;
+			throw buildMissingDepMsg(msg, id, findSimilarMappings(id));
 		}
 
 		var moduleResult;
@@ -199,6 +205,9 @@ function newContext(opts) {
 			var resolver = buildResolver(m, resolvedDeps);
 
 			moduleResult = m.init(resolver);
+			if (moduleResult === undefined) {
+				moduleResult = resolver.exports;
+			}
 
 			// This ID resolved, so pop the last item (normId) from the resolving stack
 			resolving.pop();
@@ -213,11 +222,34 @@ function newContext(opts) {
 		return moduleResult;
 	}
 
+	function buildMissingDepMsg(msg, id, possibleIds) {
+		var possible = findSimilar(id, possibleIds, suggestionThreshold);
+		if (possible.length > 0) {
+			msg += '; maybe you meant: [' + possible.join(', ') + ']?';
+		}
+		return msg;
+	}
+
 	function loadMainModule() {
 		if (!mainModule) {
 			throw 'No main module was found';
 		}
 		return loadModule(mainModule);
+	}
+
+	function loadExternal(extId) {
+		var path = externalRoot + '/node_modules/' + extId;
+		try {
+			return require(path);
+		} catch (ex) {
+			var msg = 'Could not find external dependency [' + extId + '] at path [' + path + ']';
+			throw buildMissingDepMsg(msg, extId, allExternalIds());
+		}
+	}
+
+	function allExternalIds() {
+		var path = externalRoot + '/node_modules';
+		return fs.readdirSync(path);
 	}
 
 	// IDs are not case-sensitive, but we need to make sure that resolved IDs are the same case
@@ -245,20 +277,23 @@ function newContext(opts) {
 
 	function buildResolver(mapping, resolvedDeps) {
 		return {
-			get: function(depId) {
+			import: function(depId) {
 				var normId = normalizeId(depId);
 				if (!(resolvedDeps.hasOwnProperty(normId))) {
 					var msg = 'Could not find import [' + depId + '] from module [' + mapping.id + ']';
-					var possible = findSimilarMappings(depId);
-					if (possible.length > 0) {
-						msg += '; maybe you meant [' + possible.join(', ') + ']?'
-					}
-					throw msg;
+					throw buildMissingDepMsg(msg, depId, findSimilarMappings(depId));
 				}
 
 				return resolvedDeps[normId];
 			},
-			all: function() {
+			require: function(extId) {
+				if (!contains(mapping.externals, extId)) {
+					var msg = 'Could not find external dependency [' + extId + '] from module [' + mapping.id + ']';
+					throw buildMissingDepMsg(msg, extId, mapping.externals);
+				}
+				return extMappings[extId];
+			},
+			allDependencies: function() {
 				return resolvedDeps;
 			}
 		};
@@ -266,6 +301,7 @@ function newContext(opts) {
 
 	// TODO: Would probably be more useful to also print out dependencies in reverse order.
 	// This way you could more easily see the most dependended-upon modules in the app.
+	// TODO: We also don't account for external dependencies yet.
 	function printDependencies(id, prefix) {
 		prefix = prefix || '';
 		console.log(prefix + id);
