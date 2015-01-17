@@ -36,7 +36,7 @@ Importing dependencies with require() has several issues:
 ```js
 // module.exports defines the metadata for your module: what it needs and how to initialize it
 module.exports = {
-  import: [ // local dependencies (not in package.json)
+  imports: [ // local dependencies (not in package.json)
     'utils.logger',
     'services.myService'
   ],
