@@ -46,6 +46,9 @@ function newContext(opts) {
 	// Contains modules being resolved currently.
 	// This allows us to detect circular dependencies.
 	var resolving = [];
+
+	// Default external resolver function
+	var externalResolverFn = loadExternalFromRequire;
 	
 
 	//// Public API ////
@@ -58,10 +61,17 @@ function newContext(opts) {
 		fileFilters: fileFilters,
 		getIdSeparator: getIdSeparator,
 		printDependencies: printDependencies,
-		getMainModuleId: getMainModuleId
+		getMainModuleId: getMainModuleId,
+
+		// not-published api...
+		setExternalResolverFn: setExternalResolverFn
 	};
 
 	//////////////////
+
+	function setExternalResolverFn(resolver) {
+		externalResolverFn = resolver;
+	}
 
 	function getIdSeparator() {
 		return idSeparator;
@@ -109,11 +119,11 @@ function newContext(opts) {
 		// _id overrides a built ID -- internal use only
 		var id = m._id || buildModuleId(idPrefix, dir);
 
-		var deps = m.import || [];
+		var deps = m.imports || [];
 		var init = m.init;
 		var isMain = m.isMain;
 		var scope = m.scope || 'singleton'
-		var externals = m.externals || [];
+		var externals = m.extImports || [];
 
 		if (!contains(scopes, scope)) {
 			var msg = 'Unrecognized scope: [' + scope + '] for ID [' + id + ']';
@@ -130,13 +140,9 @@ function newContext(opts) {
 			throw msg;
 		}
 
-		if (externals.length > 0 && !externalRoot) {
-			throw 'You must specify a root directory for external files by setting the ' +
-			      '\'externalRoot\' option in the context before you can load external dependencies';
-		}
 		each(externals, function(extId) {
 			if (!extMappings[extId]) {
-				extMappings[extId] = loadExternal(extId);
+				extMappings[extId] = externalResolverFn(extId);
 			}
 		});
 
@@ -168,7 +174,6 @@ function newContext(opts) {
 			if (parent) {
 				msg += ' in dependencies for [' + parent.id + ']';
 			}
-			var possible = findSimilarMappings(id);
 			throw buildMissingDepMsg(msg, id, findSimilarMappings(id));
 		}
 
@@ -237,19 +242,32 @@ function newContext(opts) {
 		return loadModule(mainModule);
 	}
 
-	function loadExternal(extId) {
-		var path = externalRoot + '/node_modules/' + extId;
+	function loadExternalFromRequire(extId) {
+		if (!externalRoot) {
+			throw 'You must specify a root directory for external files by setting the ' +
+			      '\'externalRoot\' option in the context before you can load external dependencies';
+		}
+
+		// First try to load it as a core module
+		// Can't figure out a good way to detect whether a core module without trying it
 		try {
-			return require(path);
-		} catch (ex) {
+			return require(extId);
+		} catch (notACoreModule) {
+			// Ignore. Not great.
+		}
+		var path = externalRoot + '/node_modules/' + extId;
+		if (!fs.existsSync(path)) {
+			// yes I know the docs don't like this method. 
+			// But it's a little better user experience than trying to require a file that isn't there.
 			var msg = 'Could not find external dependency [' + extId + '] at path [' + path + ']';
 			throw buildMissingDepMsg(msg, extId, allExternalIds());
 		}
+		return require(path);
 	}
 
 	function allExternalIds() {
 		var path = externalRoot + '/node_modules';
-		return fs.readdirSync(path);
+		return _allExternalIdsCache = fs.readdirSync(path);
 	}
 
 	// IDs are not case-sensitive, but we need to make sure that resolved IDs are the same case
@@ -276,27 +294,39 @@ function newContext(opts) {
 	}
 
 	function buildResolver(mapping, resolvedDeps) {
-		return {
+		var self = {
+			// Try to load from locals, and fall back to externals
 			import: function(depId) {
+				try {
+					return self.importLocal(depId);
+				} catch (localEx) {
+					// maybe it's an external dependency
+					try {
+						return self.importExt(depId);
+					} catch (extEx) {
+						// Could probably throw a better error here...
+						throw [localEx, extEx];
+					}
+				}
+			},
+			importLocal: function(depId) {
 				var normId = normalizeId(depId);
 				if (!(resolvedDeps.hasOwnProperty(normId))) {
 					var msg = 'Could not find import [' + depId + '] from module [' + mapping.id + ']';
 					throw buildMissingDepMsg(msg, depId, findSimilarMappings(depId));
 				}
-
 				return resolvedDeps[normId];
 			},
-			require: function(extId) {
+			importExt: function(extId) {
 				if (!contains(mapping.externals, extId)) {
 					var msg = 'Could not find external dependency [' + extId + '] from module [' + mapping.id + ']';
 					throw buildMissingDepMsg(msg, extId, mapping.externals);
 				}
 				return extMappings[extId];
-			},
-			allDependencies: function() {
-				return resolvedDeps;
 			}
 		};
+
+		return self;
 	}
 
 	// TODO: Would probably be more useful to also print out dependencies in reverse order.
@@ -314,15 +344,28 @@ function newContext(opts) {
 
 };
 
-function singleModule(fname, imports) {
+function singleModule(fname, opts) {
 	var ctx = newContext();
-	imports = imports || {};
-	each(imports, function(val, id) {			
+	opts = opts || {};
+	var localImports = opts.imports || {};
+	var extImports = opts.extImports || {};
+
+	ctx.setExternalResolverFn(function(id) {
+		// Specify an external resolver that 
+		// TODO: Add suggestions if they're missing an import
+		if (!extImports.hasOwnProperty(id)) {
+			throw 'External dependency [' + id + '] was not satisfied for module: [' + fname + ']';
+		}
+		return extImports[id];
+	});
+
+	each(localImports, function(val, id) {			
 		ctx.addMapping({
 			_id: id,
 			init: function() { return val; }
 		});
 	});
+
 	var m = require(fname);
 	var mapping = ctx.addMapping(m, undefined, fname);
 	return ctx.loadModule(mapping.id);

@@ -22,7 +22,8 @@
     "dependencies",
     "injection",
     "di",
-    "import"
+    "import",
+    "framework"
   ],
   "engines": {
     "node": ">=0.10.0"
