@@ -1,19 +1,22 @@
 ## eggnog ##
+The Require() should be.
+
 eggnog is a simple, lightweight module and dependency injection framework for NodeJs. 
 
 NPM: https://www.npmjs.com/package/eggnog
 
-Current Version: 0.2.0
+Current Version: 0.3.0
 
 ### What's wrong with require()?
-Importing local dependencies (those within your application, not listed in package.json) with require() has several issues:
+Importing dependencies with require() has several issues:
   - You are directly importing the implementation file, making unit testing much more difficult.
   - Calls to require() can be scattered across a file, making it difficult to find which files depend on which
   - Paths to local files are always relative, meaning require('../../utils/logger') is not uncommon. These are ugly and difficult to maintain.
+  - Because require() caches files based on the string passed to require(), it is easy to accidentally load the same local module multiple times. eggnog's naming standards make sure that each module is loaded only once.
   - A clear dependency graph is not available, and circular dependencies can sneak in unnoticed.
 
 ### What does eggnog do?
-  - Provide a standard and lightweight convention to define modules and their depencies.
+  - Provide a standard and lightweight convention to define modules and their depencies. This includes both local (relative) files, and external dependencies.
   - Injects dependencies, rather than having files fetch dependencies, making unit testing much simpler.
   - Files are globally identifiable by their directory structure relative to the root. An ID might be 'utils.logger'.
   - Files list their dependency information at the top of every file. Another file in another part of the app might import 'utils.logger'.
@@ -22,34 +25,38 @@ Importing local dependencies (those within your application, not listed in packa
   - eggnog allows for some simple scoping of modules
   - eggnog allows you to print dependency graphs to the console
 
-### What does eggnog NOT do?
-  - Everything that isn't listed above.
-  - It is as un-opinionated as possible.
+### What type of projects can I use eggnog in?
+  - eggnog is as un-opinionated as possible.
   - Build any type of application you like with it, big or small, CLI or web app.
-  - Does not interfere with popular frameworks like Express.
+  - eggnog does not interfere with popular frameworks like Express.
 
 ### What do these standard file conventions look like?
 ```js
 module.exports = {
-  import: [
+  import: [ // local dependencies (not in package.json)
     'utils.logger',
     'services.myService'
   ],
+  externals: [ // external (core or package.json) dependencies
+    'glob', // from node_modules
+    'fs' // core module
+  ]
   init: init
 };
 
-function init(imports) {
-  var log = imports.get('utils.logger');
-  var myService = imports.get('services.myService');
+function init(eggnog) {
+  var log = eggnog.import('utils.logger');
+  var myService = eggnog.import('services.myService');
+  var glob = eggnog.import('glob');
+  var fs = eggnog.import('fs');
   ...
-  return {
-    // The return value from init() is what your module.exports 
-    //   would have originally been
+  eggnog.exports = {
+    // This is what your module.exports would have originally been
   };
 }
 ```
 
-All dependencies listed in the import array will available on the imports object passed to the init() function. The init() function will only be called once all the imports have been resolved.
+All dependencies listed in the imports in `module.exports` will available on the eggnog object passed to the init() function via the `import(id)` function. The init() function will only be called once all the imports have been resolved.
 
 In this example, your logger utility is assumed to be in {root}/utils/logger.js, and so eggnog will automatically pick it up and make it available with the ID 'utils.logger'.
 
@@ -58,9 +65,9 @@ In this example, your logger utility is assumed to be in {root}/utils/logger.js,
   - In your entry point (often server.js), you will create a new context, point it to your root directory, and then tell it to start your app.
 
 ```js
-var eggnog = require('eggnog');
-
-var context = eggnog.newContext();
+var context = require('eggnog').newContext({
+	externalRoot: __dirname // This is required if your app has dependencies in package.json
+});
 context.scanForFiles(__dirname);
 
 context.main();
@@ -68,13 +75,13 @@ context.main();
 
 This will scan for all JS files in the current directory and subdirectories, and add them to the context. At this point, none of the init() methods in any files have been run, as they are only evaluated at the point they need to be.
 
-Note: The base directory named passed to scanForFiles() will never be used in the IDs of the modules. Otherwise, Eggnog would have no way of knowing which folders should be part of the ID. (This may be change in the future.)
+Note: The base directory name passed to scanForFiles() will never be used in the IDs of the modules. Otherwise, Eggnog would have no way of knowing which folders should be part of the ID. (This may be change in the future.)
 
 The `context.main()` method will attempt to start the application from the module that declared itself the main module. There can only be one of these in the context at a time, and an error will be thrown if a second one is added. The main module can be declared as such:
 ```js
 module.exports = {
   isMain: true,
-  import: [ ... ],
+  imports: [ ... ],
   init: init
 };
 ...
@@ -102,9 +109,9 @@ module.exports = {
   init: init
 };
 
-function init(imports) {
+function init(eggnog) {
   var count = 0;
-  return {
+  eggnog.exports = {
     increment: function() { return count++; }
   };
 }
@@ -126,20 +133,29 @@ Because each module defines its dependencies, but not how to find them, it is po
 ```js
 var eggnog = require('eggnog');
 
-var mockUserDao = {
-  getUser: function(userId) {
-    return { /* mock user object */ };
-  },
-  // other methods that service.js uses from userDao from the test...
-};
-
 // Assume the file we want to test is at ./myApp/service.js
-// Assume it has a dependency on myApp.userDao
+// Assume it has a dependency on myApp.userDao and fs
 var filename = __dirname + '/myApp/service.js';
 var service = eggnog.singleModule(filename, {
-  'myApp.userDao': mockUserDao
+  imports: {
+    // When the service imports 'myApp.userDao', this object will be injected
+    'myApp.userDao': {
+      getUser: function(userId) {
+      return { /* mock user object */ };
+    },
+    // other methods that service.js uses from userDao from the test...
+  },
+  extImports: {
+    // When the service imports 'fs', this object will be injected
+    'fs': {
+      readdirSync: function(path) {
+        // this is the method that will be called when the service calls fs.readdirSync()
+        return ['testDirectory'];
+      }
+    }
+  }
 });
-// service now has the mock dao injected to it, and tests can be run against it
+// service now has the mocks injected to it, and tests can be run against it
 ```
 
 Notes: 
@@ -153,7 +169,8 @@ See https://github.com/MikeyBurkman/eggnog-exampleapp for example usage
 ### Misc Notes
   - The init() function will only be called if the module is either the starting module, or is a transitive dependency of the starting module.
   - Module IDs follow the directory structure, though are (by default) period-deliminated. So if file 'myapp/utils/logger' is loaded with 'myapp' as the root, then the ID becomes 'utils.logger'.
-  - IDs are case-insensitive. If you have two files who only differ by their casing, then you should probably rename one of them, because that's just bad form.
+  - IDs are case-insensitive for local modules. If you have two files who only differ by their casing, then you should probably rename one of them, because that's just bad form.
+  - In the case of local and external dependencies having the same ID, the import() function on the eggnog object passed to init() will always favor local dependencies. You can work around this by explicitly calling eggnog.importLocal(id) or eggnog.importExt(id);
 
 ##### Documentation TODO
   - Other methods available on the context.
