@@ -14,7 +14,6 @@ Importing dependencies with require() has several issues:
   - You are directly importing the implementation file, making unit testing much more difficult or even impossible.
   - Calls to require() can be scattered across a file, making it difficult to find which files depend on which
   - Paths to local files are always relative, meaning require('../../utils/logger') is not uncommon. These are ugly and difficult to maintain.
-  - Because require() caches files based on the string passed to require(), it is easy to accidentally load the same local module multiple times (such as in the above call to require('../../utils/logger')). eggnog makes sure that each module is loaded only once. (And only if it's needed.)
   - A clear dependency graph is not available, and circular dependencies can sneak in unnoticed.
 
 ### What does eggnog do?
