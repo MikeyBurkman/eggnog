@@ -36,12 +36,12 @@ Importing dependencies with require() has several issues:
 ```js
 // module.exports defines the metadata for your module: what it needs and how to initialize it
 module.exports = {
-  imports: [ // local dependencies (not in package.json)
+  imports: [ // local dependencies (local JS files, not packages defined in package.json)
     'utils.logger',
     'services.myService'
   ],
   externals: [ // external (core or package.json) dependencies
-    'glob', // from node_modules
+    'express', // from node_modules
     'fs' // core module
   ]
   init: init
@@ -52,7 +52,7 @@ module.exports = {
 function init(eggnog) {
   var log = eggnog.import('utils.logger');
   var myService = eggnog.import('services.myService');
-  var glob = eggnog.import('glob');
+  var express = eggnog.import('express');
   var fs = eggnog.import('fs');
   ...
   eggnog.exports = {
