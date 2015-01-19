@@ -6,6 +6,7 @@ eggnog is a simple, lightweight module and dependency injection framework for No
 NPM: https://www.npmjs.com/package/eggnog
 
 Current Version: 0.3.0
+
 eggnog is currently still in beta, and the API is still likely to change, though not much. If you use this and run into any questions/issues, feel free to create an issue on the Github page!
 
 ### What's wrong with require()?
