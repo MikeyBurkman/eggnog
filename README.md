@@ -16,8 +16,9 @@ Importing dependencies with require() has several issues:
   - A clear dependency graph is not available, and circular dependencies can sneak in unnoticed.
 
 ### What does eggnog do?
+  - A replacement for require() in user code.
   - Provide a standard and lightweight convention to define modules and their depencies. This includes both local (relative) files, and external (package.json or core node) dependencies.
-  - Uses require() behind the scenes, so there are rarely surprises.
+  - Uses require() behind the scenes, so packages and files are imported the way you expect them to be.
   - Injects dependencies, rather than having files fetch dependencies, making unit testing much easier.
   - Local files are globally identifiable by their directory structure relative to the root. An ID might be 'utils.logger'.
   - External files are identifiable with the same name you would use with require().
