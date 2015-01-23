@@ -7,17 +7,19 @@ NPM: https://www.npmjs.com/package/eggnog
 
 Current Version: 0.3.1
 
+eggnog is currently still in beta, and the API is still likely to change, though not much. If you use this and run into any questions/issues, feel free to create an issue on the Github page!
+
 ### What's wrong with require()?
 Importing dependencies with require() has several issues:
   - You are directly importing the implementation file, making unit testing much more difficult or even impossible.
   - Calls to require() can be scattered across a file, making it difficult to find which files depend on which
   - Paths to local files are always relative, meaning require('../../utils/logger') is not uncommon. These are ugly and difficult to maintain.
-  - Because require() caches files based on the string passed to require(), it is easy to accidentally load the same local module multiple times (such as in the above call to require('../../utils/logger')). eggnog makes sure that each module is loaded only once. (And only if it's needed.)
   - A clear dependency graph is not available, and circular dependencies can sneak in unnoticed.
 
 ### What does eggnog do?
+  - A replacement for require() in user code.
   - Provide a standard and lightweight convention to define modules and their depencies. This includes both local (relative) files, and external (package.json or core node) dependencies.
-  - Uses require() behind the scenes, so there are rarely surprises.
+  - Uses require() behind the scenes, so packages and files are imported the way you expect them to be.
   - Injects dependencies, rather than having files fetch dependencies, making unit testing much easier.
   - Local files are globally identifiable by their directory structure relative to the root. An ID might be 'utils.logger'.
   - External files are identifiable with the same name you would use with require().
@@ -36,12 +38,12 @@ Importing dependencies with require() has several issues:
 ```js
 // module.exports defines the metadata for your module: what it needs and how to initialize it
 module.exports = {
-  import: [ // local dependencies (not in package.json)
+  imports: [ // local dependencies (local JS files, not packages defined in package.json)
     'utils.logger',
     'services.myService'
   ],
   externals: [ // external (core or package.json) dependencies
-    'glob', // from node_modules
+    'express', // from node_modules
     'fs' // core module
   ]
   init: init
@@ -52,7 +54,7 @@ module.exports = {
 function init(eggnog) {
   var log = eggnog.import('utils.logger');
   var myService = eggnog.import('services.myService');
-  var glob = eggnog.import('glob');
+  var express = eggnog.import('express');
   var fs = eggnog.import('fs');
   ...
   eggnog.exports = {
