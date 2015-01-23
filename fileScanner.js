@@ -32,8 +32,10 @@ function scan(context, opts) {
 		var d = name.substr(baseDirLen+1);
 		if (!excludeFn(d)) {
 			var m = require(name);
-			context.addMapping(m, idPrefix, d);
-			included.push(name);
+			if (m) {
+				context.addMapping(m, idPrefix, d);
+				included.push(name);
+			}
 		}
 	});
 
