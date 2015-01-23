@@ -5,7 +5,7 @@ eggnog is a simple, lightweight module and dependency injection framework for No
 
 NPM: https://www.npmjs.com/package/eggnog
 
-Current Version: 0.3.0
+Current Version: 0.3.1
 
 ### What's wrong with require()?
 Importing dependencies with require() has several issues:
