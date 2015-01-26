@@ -227,6 +227,12 @@ See [this example app](https://github.com/MikeyBurkman/eggnog-exampleapp)
   - Local module IDs follow the directory structure, though are (by default) period-deliminated. So if file `'/home/joe/myapp/utils/logger'` is loaded with `'/home/joe/myapp'` as the root, then the module ID becomes `'utils.logger'`.
   - IDs are case-insensitive for local modules. If you have two files who only differ by their casing, then you should probably rename one of them, because that's just bad form. (External files generally follow the naming rules for require())
 
+### Why is it called eggnog?
+  - I wrote this right before Christmas, so I was feeling festive.
+  - Cutesy names are popular these days.
+  - Like Google, it works nicely as a verb.
+  - There was no other JS project in with this name.
+
 ##### Documentation TODO
   - Other methods available on the context.
   - File filters when loading modules.
