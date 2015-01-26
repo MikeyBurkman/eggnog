@@ -3,7 +3,7 @@ What Require() should be.
 
 eggnog is a simple, lightweight module and dependency injection framework for NodeJs. 
 
-NPM: https://www.npmjs.com/package/eggnog
+[Link to NPM](https://www.npmjs.com/package/eggnog)
 
 Current Version: 0.3.1
 
@@ -13,7 +13,8 @@ eggnog is currently still in beta, and the API is still likely to change, though
 Importing dependencies with require() has several issues:
   - You are directly importing the implementation file, making unit testing much more difficult or even impossible.
   - Calls to require() can be scattered across a file, making it difficult to find which files depend on which
-  - Paths to local files are always relative, meaning require('../../utils/logger') is not uncommon. These are ugly and difficult to maintain.
+  - Paths to local files are always relative, meaning `require('../../utils/logger')` is not uncommon. These are ugly and difficult to maintain.
+  - require() allows for circular dependencies, but this only works when returning partial exports, and it's [confusing and complicated](http://nodejs.org/api/modules.html#modules_cycles). There's no reason your architecture should ever require circular dependencies.
   - A clear dependency graph is not available, and circular dependencies can sneak in unnoticed.
 
 ### What does eggnog do?
@@ -21,16 +22,16 @@ Importing dependencies with require() has several issues:
   - Provide a standard and lightweight convention to define modules and their depencies. This includes both local (relative) files, and external (package.json or core node) dependencies.
   - Uses require() behind the scenes, so packages and files are imported the way you expect them to be.
   - Injects dependencies, rather than having files fetch dependencies, making unit testing much easier.
-  - Local files are globally identifiable by their directory structure relative to the root. An ID might be 'utils.logger'.
+  - Local files are globally identifiable by their directory structure relative to the root. An ID might be `'utils.logger'`.
   - External files are identifiable with the same name you would use with require().
-  - Files list their dependency information at the top of every file. Another file in another part of the app might import 'utils.logger'.
+  - Files list their dependency information at the top of every file. Another file in another part of the app might import `'utils.logger'`.
   - Most files only need to follow a convention to work with eggnog, and do not require any extra dependencies of their own. (In this way, you are locked in only to a convention, and not to the eggnog tool itself.)
-  - eggnog detects circular dependencies immediately
-  - eggnog allows for some simple scoping of modules
-  - eggnog allows you to print dependency graphs to the console
+  - eggnog detects circular dependencies immediately.
+  - eggnog allows for some simple scoping of modules.
+  - eggnog allows you to print dependency graphs to the console.
 
 ### What type of projects can I use eggnog in?
-  - eggnog is as un-opinionated as possible.
+  - eggnog is as un-opinionated as possible. (Except for a few things like not having circular dependencies and not tying modules to external implementations.)
   - Build any type of application you like with it, big or small, CLI or web app.
   - eggnog does not interfere with popular frameworks like Express.
 
@@ -172,11 +173,11 @@ Notes:
   - Loading modules is cheap. (Remember, require() is used behind the scenes, which caches each file.) Create a new context for each individual test, to make sure each test is completely independent of each other.
 
 ### Examples
-See https://github.com/MikeyBurkman/eggnog-exampleapp for example usage
+See [this example app](https://github.com/MikeyBurkman/eggnog-exampleapp)
 
 ### Misc Notes
   - The init() function will only be called if the module is either the starting module, or is a transitive dependency of the starting module.
-  - Local module IDs follow the directory structure, though are (by default) period-deliminated. So if file '/home/joe/myapp/utils/logger' is loaded with '/home/joe/myapp' as the root, then the module ID becomes 'utils.logger'.
+  - Local module IDs follow the directory structure, though are (by default) period-deliminated. So if file `'/home/joe/myapp/utils/logger'` is loaded with `'/home/joe/myapp'` as the root, then the module ID becomes `'utils.logger'`.
   - IDs are case-insensitive for local modules. If you have two files who only differ by their casing, then you should probably rename one of them, because that's just bad form. (External files generally follow the naming rules for require())
   - In the case of local and external dependencies having the same ID, `eggnog.import(id)` will always favor local dependencies. You can work around this by explicitly calling `eggnog.importLocal(id)` or `eggnog.importExt(id)`.
 
