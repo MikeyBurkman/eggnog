@@ -11,10 +11,10 @@ var utils = require('./utils.js');
 function createFileFilters() {
 	return {
 		onlyIndexJs: function(fname) {
-			return !strEndsWith(fname, '/index.js');
+			return !utils.strEndsWith(fname, '/index.js');
 		},
 		notIndexJs: function(fname) {
-			return strEndsWith(fname, '/index.js');
+			return utils.strEndsWith(fname, '/index.js');
 		}
 	};
 }
