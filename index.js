@@ -5,8 +5,8 @@ module.exports = {
 	fileFilters: createFileFilters()
 };
 
-var context = require('./context');
-var utils = require('./utils.js');
+var context = require('./lib/context');
+var utils = require('./lib/utils.js');
 
 function createFileFilters() {
 	return {
@@ -22,7 +22,7 @@ function createFileFilters() {
 function newContext(opts) {
 	opts = opts || {};
 	var ctxOpts = {
-		externalRoot: opts.externalRoot
+		nodeModulesAt: opts.nodeModulesAt
 	};
 	return context.create(ctxOpts);
 }
