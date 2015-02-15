@@ -5,7 +5,7 @@ eggnog is a simple, lightweight module and dependency injection framework for No
 
 [Link to NPM](https://www.npmjs.com/package/eggnog)
 
-Current Version: 0.3.1
+Current Version: 0.4.0
 
 eggnog is currently still in beta, and the API is still likely to change, though not much. If you use this and run into any questions/issues, feel free to create an issue on the Github page!
 
@@ -107,14 +107,14 @@ In this example, your logger utility is assumed to be in {root}/utils/logger.js,
 ```js
 // server.js or app.js
 var context = require('eggnog').newContext({
-  externalRoot: __dirname // This is required if your app has dependencies in package.json
+  nodeModulesAt: __dirname // This is required if your app has dependencies in package.json
 });
-context.scanForFiles(__dirname);
+context.addDirectory(__dirname);
 
 context.main();
 ```
 
-This will scan for all JS files in the current directory and subdirectories, and add them to the context. At this point, none of the init() methods in any files have been run, as they are only evaluated at the point they need to be.
+This will scan for all JS files in the current directory (__dirname) and subdirectories, and add them to the context. At this point, none of the init() methods in any files have been run, as they are only evaluated at the point they need to be.
 
 Note: The base directory name passed to scanForFiles() will never be used in the IDs of the modules. Otherwise, Eggnog would have no way of knowing which folders should be part of the ID. (This may be change in the future.)
 
@@ -218,6 +218,7 @@ Notes:
   - eggnog is not a unit test framework. It just allows you to easily inject mock dependencies. Use a real testing framework in conjunction with eggnog.
   - It is not possible (or at least not easy) to use a mix of real and mock implementations. This is on purpose. Using real implementations of dependencies would not make this a unit test.
   - Loading modules is cheap. (Remember, require() is used behind the scenes, which caches each file.) Create a new context for each individual test, to make sure each test is completely independent of each other.
+  - eggnog testing is still very beta. This will likely be greatly improved in the future.
 
 ### Examples
 See [this example app](https://github.com/MikeyBurkman/eggnog-exampleapp)
