@@ -1,12 +1,13 @@
 
 module.exports = {
 	newContext: newContext, 
-	singleModule: singleModule,
+	newSingleModuleContext: newSingleModuleContext,
 	fileFilters: createFileFilters()
 };
 
 var context = require('./lib/context');
 var utils = require('./lib/utils.js');
+var singleModuleContext = require('./lib/singleModuleContext.js');
 
 function createFileFilters() {
 	return {
@@ -27,32 +28,8 @@ function newContext(opts) {
 	return context.create(ctxOpts);
 }
 
-function singleModule(fname, opts) {
-	opts = opts || {};
-	var localImports = opts.imports || {};
-	var extImports = opts.extImports || {};
-
-	var ctx = context.create({
-		externalResolverFn: function(id) {
-			// Specify an external resolver that 
-			// TODO: Add suggestions if they're missing an import
-			if (!extImports.hasOwnProperty(id)) {
-				throw 'External dependency [' + id + '] was not satisfied for module: [' + fname + ']';
-			}
-			return extImports[id];
-		}
-	});
-
-	utils.each(localImports, function(val, id) {			
-		ctx.addMapping({
-			_id: id,
-			init: function() { return val; }
-		});
-	});
-
-	var m = require(fname);
-	var mapping = ctx.addMapping(m, undefined, fname);
-	return ctx.loadModule(mapping.id);
+function newSingleModuleContext(rootDir) {
+	return singleModuleContext.create(rootDir);
 }
 
 
