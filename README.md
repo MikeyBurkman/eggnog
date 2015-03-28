@@ -5,7 +5,7 @@ eggnog is a simple, lightweight module and dependency injection framework for No
 
 [Link to NPM](https://www.npmjs.com/package/eggnog)
 
-Current Version: 0.4.0
+Current Version: 0.5.0
 
 eggnog is currently still in beta, and the API is still likely to change, though not much. If you use this and run into any questions/issues, feel free to create an issue on the Github page!
 
@@ -21,7 +21,10 @@ module.exports = {
   externals: [ // external (core or package.json) dependencies
     'express', // from node_modules
     'fs' // core module
-  ]
+  ],
+  globals: [
+    'console'
+  ],
   init: init
 };
 
@@ -32,6 +35,7 @@ function init(eggnog) {
   var myService = eggnog.import('services.myService');
   var express = eggnog.import('express');
   var fs = eggnog.import('fs');
+  var console = eggnog.import('console');
   ...
   eggnog.exports = {
     // This is what your module.exports would have originally been
@@ -48,7 +52,7 @@ Importing dependencies with require() has several issues:
   - A clear dependency graph is not available, and circular dependencies can sneak in unnoticed.
 
 ### What does eggnog do?
-  - A replacement for require() in user code.
+  - A replacement for require() in user code. (Also allows injecting of global variables as well.)
   - Provide a standard and lightweight convention to define modules and their depencies. This includes both local (relative) files, and external (package.json or core node) dependencies.
   - Uses require() behind the scenes, so packages and files are imported the way you expect them to be.
   - Injects dependencies, rather than having files fetch dependencies, making unit testing much easier.
@@ -76,7 +80,10 @@ module.exports = {
   externals: [ // external (core or package.json) dependencies
     'express', // from node_modules
     'fs' // core module
-  ]
+  ],
+  globals: [
+    'console'
+  ],
   init: init
 };
 
@@ -87,6 +94,7 @@ function init(eggnog) {
   var myService = eggnog.import('services.myService');
   var express = eggnog.import('express');
   var fs = eggnog.import('fs');
+  var console = eggnog.import('console');
   ...
   eggnog.exports = {
     // This is what your module.exports would have originally been
@@ -160,7 +168,7 @@ function init(eggnog) {
 
 ### Naming Conflicts?
   - In the case of local and external dependencies having the same ID, `eggnog.import(id)` will always favor local dependencies. 
-  - You can work around this by explicitly calling `eggnog.importLocal(id)` or `eggnog.importExt(id)`.
+  - You can work around this by explicitly calling `eggnog.importLocal(id)`, `eggnog.importExt(id)`, or `eggnog.global(id)`.
 ```js
 function init(eggnog) {
   // The one in the root directory of your app's source code
@@ -168,6 +176,8 @@ function init(eggnog) {
   
   // The one you define in project.json
   var externalLogger = eggnog.importExt('logger');
+  
+  var console = eggnog.global('console');
   
   ...
 }
@@ -189,13 +199,14 @@ Because each module defines its dependencies, but not how to find them, it is po
 ```js
 var eggnog = require('eggnog');
 
-// Assume the file we want to test is at ./myApp/service.js
-// Assume it has a dependency on myApp.userDao and fs
-var filename = __dirname + '/myApp/service.js';
-var service = eggnog.singleModule(filename, {
+var context = eggnog.newSingleModuleContext(__dirname + '/myApp');
+
+// Assume the file we want to test is 'services.myService'
+// Assume it has a dependency on 'daos.userDao', 'fs', and 'console'
+var service = context.buildModule('services.myService', {
   imports: {
     // When the service imports 'myApp.userDao', this object will be injected
-    'myApp.userDao': {
+    'daos.userDao': {
       getUser: function(userId) {
       return { /* mock user object */ };
     },
@@ -209,6 +220,11 @@ var service = eggnog.singleModule(filename, {
         return ['testDirectory'];
       }
     }
+  },
+  globals: {
+    'cosole': {
+      log: function() { /* ignore */ }
+    }
   }
 });
 // service now has the mocks injected to it, and tests can be run against it
@@ -217,15 +233,15 @@ var service = eggnog.singleModule(filename, {
 Notes: 
   - eggnog is not a unit test framework. It just allows you to easily inject mock dependencies. Use a real testing framework in conjunction with eggnog.
   - It is not possible (or at least not easy) to use a mix of real and mock implementations. This is on purpose. Using real implementations of dependencies would not make this a unit test.
-  - Loading modules is cheap. (Remember, require() is used behind the scenes, which caches each file.) Create a new context for each individual test, to make sure each test is completely independent of each other.
-  - eggnog testing is still very beta. This will likely be greatly improved in the future.
+  - Loading modules is cheap. (Remember, require() is used behind the scenes, which caches each file.) Create a new module for each individual test, to make sure each test is completely independent of each other.
+  - eggnog testing is still beta. Better integration with testing frameworks like Mocha are in the works.
 
 ### Examples
 See [this example app](https://github.com/MikeyBurkman/eggnog-exampleapp)
 
 ### Misc Notes
   - The init() function will only be called if the module is either the starting module, or is a transitive dependency of the starting module.
-  - Local module IDs follow the directory structure, though are (by default) period-deliminated. So if file `'/home/joe/myapp/utils/logger'` is loaded with `'/home/joe/myapp'` as the root, then the module ID becomes `'utils.logger'`.
+  - Local module IDs follow the directory structure, though are period-deliminated. So if file `'/home/joe/myapp/utils/logger'` is loaded with `'/home/joe/myapp'` as the root, then the module ID becomes `'utils.logger'`.
   - IDs are case-insensitive for local modules. If you have two files who only differ by their casing, then you should probably rename one of them, because that's just bad form. (External files generally follow the naming rules for require())
 
 ### Why is it called eggnog?
