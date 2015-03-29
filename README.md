@@ -14,7 +14,7 @@ Here's what your NodeJs modules might look like:
 ```js
 // module.exports defines the metadata for your module: what it needs and how to initialize it
 module.exports = {
-  imports: [ // local dependencies (local JS files, not packages defined in package.json)
+  locals: [ // local dependencies (local JS files, not packages defined in package.json)
     'utils.logger',
     'services.myService'
   ],
@@ -73,7 +73,7 @@ Importing dependencies with require() has several issues:
 ```js
 // module.exports defines the metadata for your module: what it needs and how to initialize it
 module.exports = {
-  imports: [ // local dependencies (local JS files, not packages defined in package.json)
+  locals: [ // local dependencies (local JS files, not packages defined in package.json)
     'utils.logger',
     'services.myService'
   ],
@@ -167,15 +167,15 @@ function init(eggnog) {
 ```
 
 ### Naming Conflicts?
-  - In the case of local and external dependencies having the same ID, `eggnog.import(id)` will always favor local dependencies. 
-  - You can work around this by explicitly calling `eggnog.importLocal(id)`, `eggnog.importExt(id)`, or `eggnog.global(id)`.
+  - In the case of local and external dependencies having the same ID, `eggnog.import(id)` will always favor local dependencies, followed by externals, and then globals.
+  - You can work around this by explicitly calling `eggnog.local(id)`, `eggnog.external(id)`, or `eggnog.global(id)`.
 ```js
 function init(eggnog) {
   // The one in the root directory of your app's source code
-  var localLogger = eggnog.importLocal('logger'); 
+  var localLogger = eggnog.local('logger'); 
   
   // The one you define in project.json
-  var externalLogger = eggnog.importExt('logger');
+  var externalLogger = eggnog.external('logger');
   
   var console = eggnog.global('console');
   
@@ -204,7 +204,7 @@ var context = eggnog.newSingleModuleContext(__dirname + '/myApp');
 // Assume the file we want to test is 'services.myService'
 // Assume it has a dependency on 'daos.userDao', 'fs', and 'console'
 var service = context.buildModule('services.myService', {
-  imports: {
+  locals: {
     // When the service imports 'myApp.userDao', this object will be injected
     'daos.userDao': {
       getUser: function(userId) {
@@ -212,7 +212,7 @@ var service = context.buildModule('services.myService', {
     },
     // other methods that service.js uses from userDao from the test...
   },
-  extImports: {
+  externals: {
     // When the service imports 'fs', this object will be injected
     'fs': {
       readdirSync: function(path) {
