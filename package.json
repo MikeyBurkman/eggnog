@@ -1,10 +1,13 @@
 {
   "name": "eggnog",
   "description": "What Require() should be",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "dependencies": {
     "glob": "^4.3.2",
     "levenshtein": "^1.0.5"
+  },
+  "devDependencies": {
+    "typescript": "~1.4.1"
   },
   "repository": {
     "type": "git",

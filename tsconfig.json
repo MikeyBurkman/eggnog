@@ -1,0 +1,32 @@
+{
+    "version": "1.4.1",
+    "compilerOptions": {
+        "target": "es5",
+        "module": "commonjs",
+        "declaration": true,
+        "noImplicitAny": false,
+        "removeComments": true,
+        "noLib": false,
+        "outDir": "dist"
+    },
+    "filesGlob": [
+        "./**/*.ts",
+        "!./node_modules/**/*.ts"
+    ],
+    "files": [
+        "./dist/lib/context.d.ts",
+        "./dist/lib/fileScanner.d.ts",
+        "./dist/lib/singleModuleContext.d.ts",
+        "./dist/lib/utils.d.ts",
+        "./index.ts",
+        "./lib/context.d.ts",
+        "./lib/context.ts",
+        "./lib/fileScanner.ts",
+        "./lib/singleModuleContext.ts",
+        "./lib/utils.ts",
+        "./typings/glob.d.ts",
+        "./typings/levenshtein.d.ts",
+        "./typings/minimatch.d.ts",
+        "./typings/node.d.ts"
+    ]
+}

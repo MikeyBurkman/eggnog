@@ -32,4 +32,11 @@ function newSingleModuleContext(rootDir) {
 	return singleModuleContext.create(rootDir);
 }
 
-
+class Something {
+	constructor(n) {
+		console.log(n);
+	}
+	func() {
+		alert('blah');
+	}
+}
