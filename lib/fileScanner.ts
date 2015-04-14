@@ -1,5 +1,5 @@
 
-import Utils = require('./utils');
+import Utils = require('./Utils');
 import glob = require('glob');
 
 export class ScanResult {
