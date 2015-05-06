@@ -48,8 +48,9 @@ class ContextImpl implements Context {
 	private resolving: Array<string> = [];
 
 	constructor(nodeModulesAt?: string, externalResolverFn?: (id: string) => any, globalResolverFn?: (id: string) => any) {
+		var self = this;
 		this.nodeModulesAt = nodeModulesAt;
-		this.externalResolverFn = externalResolverFn || this.loadExternalFromRequire;
+		this.externalResolverFn = externalResolverFn || function() { return self.loadExternalFromRequire.apply(self, arguments); };
 		this.globalResolverFn = globalResolverFn || this.nodeJsGlobalResolver;
 	}
 
@@ -59,8 +60,17 @@ class ContextImpl implements Context {
 		return this.mainModule;
 	}
 
-	addDirectory(opts: fileScanner.ScanArgs): Array<string> {
-		var loaded = fileScanner.scan(opts);
+	main(): any {
+		if (!this.mainModule) {
+			throw 'No main module was found';
+		}
+		return this.loadModule(this.mainModule);
+	}
+
+	addDirectory(baseDir: string): Array<string> {
+		var loaded = fileScanner.scan({
+			baseDir: baseDir
+		});
 		var included: Array<string> = [];
 		loaded.forEach((res) => {
 			included.push(res.fileName);
@@ -159,11 +169,11 @@ class ContextImpl implements Context {
 			// Currently resolving this id
 			this.resolving.push(normId);
 
-			var resolvedDeps = {};
+			var resolvedDeps: {[id: string]: any} = {};
 			Utils.each(m.deps, function(dep) {
-				dep = this.normalizeId(dep);
+				dep = normalizeId(dep);
 				resolvedDeps[dep] = this.loadModule(dep, m);
-			});
+			}, this);
 
 			var resolver = new ResolverImpl(m, resolvedDeps, this.externalResolverFn, this.globalResolverFn);
 
@@ -190,14 +200,14 @@ class ContextImpl implements Context {
 	// TODO: Would probably be more useful to also print out dependencies in reverse order.
 	// This way you could more easily see the most dependended-upon modules in the app.
 	// TODO: We also don't account for external dependencies yet.
-	printDependencies(id: string, prefix?: string) {
+	printDependencies(id: string, prefix?: string): void {
 		prefix = prefix || '';
 		console.log(prefix + id);
 
 		var mapping = this.mappings[normalizeId(id)];
 		Utils.each(mapping.deps, function(dep) {
 			this.printDependencies(dep, prefix + '--');
-		});
+		}, this);
 	}
 
 
@@ -209,8 +219,8 @@ class ContextImpl implements Context {
 
 	private loadExternalFromRequire(id: string): any {
 		if (!this.nodeModulesAt) {
-			throw 'Before you can load external dependencies, you must specify where node_modules can be found by ' +
-			      'setting the \'nodeModulesAt\' option when creating the context';
+			throw ('Before you can load external dependencies, you must specify where node_modules can be found by ' +
+			      'setting the \'nodeModulesAt\' option when creating the context');
 		}
 
 		// First try to load it as a core module
@@ -242,13 +252,13 @@ class ContextImpl implements Context {
 			if (!Utils.contains(ContextImpl.validMappingProperties, key)) {
 				throw buildMissingDepMsg('Invalid module export key: [' + key + ']', key, ContextImpl.validMappingProperties);
 			}
-		});
+		}, this);
 	}
 
 	private findSimilarMappings(id: string): Array<string> {
 		var ids = Utils.each(this.mappings, function(mapping) {
 			return mapping.id;
-		});
+		}, this);
 		return Utils.findSimilar(id, ids);
 	}
 }
@@ -265,7 +275,8 @@ class ResolverImpl implements Resolver {
 		externalResolverFn: any;
 		globalResolverFn: any;
 
-		constructor(mapping: ResolvedModule, resolvedDeps, externalResolverFn, globalResolverFn) {
+		// TODO: Types for these arguments
+		constructor(mapping: ResolvedModule, resolvedDeps: any, externalResolverFn: any, globalResolverFn: any) {
 			this.mapping = mapping;
 			this.resolvedDeps = resolvedDeps;
 			this.locals = Utils.objectKeys(resolvedDeps);

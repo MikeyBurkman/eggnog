@@ -1,1 +1,6 @@
-lib
+lib/*.ts
+.editorconfig
+eggnog.sublime-project
+*.ts
+tsconfig.json
+ts-files

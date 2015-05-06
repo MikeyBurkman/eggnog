@@ -2,11 +2,11 @@
 import Levenshtein = require('levenshtein');
 
 class Utils {
-	static each(o: any, fn: (arg: any, i: any) => any): any[] { // map fn that works for both arrays and objects
-		var r = [];
+	static each(o: any, fn: (arg: any, i: any) => any, scope?: any): Array<any> { // map fn that works for both arrays and objects
+		var r = new Array<any>();
 		for (var x in o) {
 			if (o.hasOwnProperty(x)) {
-				var val = fn(o[x], x);
+				var val = fn.call(scope, o[x], x);
 				r.push(val);
 			}
 		}
@@ -29,7 +29,7 @@ class Utils {
 	}
 
 	static findSimilar(str: string, arr: Array<string>): Array<string> {
-		var ret = [];
+		var ret = new Array<string>();
 		var threshold = 4;
 		for (var i in arr) {
 			var x = arr[i];
@@ -61,13 +61,14 @@ class Utils {
 	// Properties in other take precedence.
 	// IE: mergeObjects({a: true, b: 42}, {a: false, c: 'abc'}) -> {a: false, b: 42, c: 'abc'}
 	static mergeObjects(root: any, other: any): any {
-		var res = {};
+		var res: {[id: string]: any} = {};
 		Utils.each(root, function(value, key) {
 			res[key] = value;
 		});
 		Utils.each(other, function(value, key) {
 			res[key] = value;
 		});
+		return res;
 	}
 
 	static isString(o: any): boolean {
