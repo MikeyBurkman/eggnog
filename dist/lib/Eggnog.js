@@ -1,5 +1,5 @@
-var ContextImpl = require("./lib/ContextImpl");
-var SingleModuleContext = require("./lib/SingleModuleContext");
+var ContextImpl = require('./ContextImpl');
+var SingleModuleContext = require('./SingleModuleContext');
 var Eggnog = (function () {
     function Eggnog() {
     }

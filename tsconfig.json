@@ -14,9 +14,9 @@
         "!./node_modules/**/*.ts"
     ],
     "files": [
-        "./dist/definitions/eggnog.d.ts",
         "./dist/definitions/lib/Context.d.ts",
         "./dist/definitions/lib/ContextImpl.d.ts",
+        "./dist/definitions/lib/Eggnog.d.ts",
         "./dist/definitions/lib/EggnogModule.d.ts",
         "./dist/definitions/lib/EnumExt.d.ts",
         "./dist/definitions/lib/ResolvedModule.d.ts",
@@ -25,9 +25,9 @@
         "./dist/definitions/lib/SingleModuleContext.d.ts",
         "./dist/definitions/lib/Utils.d.ts",
         "./dist/definitions/lib/fileScanner.d.ts",
-        "./eggnog.ts",
         "./lib/Context.ts",
         "./lib/ContextImpl.ts",
+        "./lib/Eggnog.ts",
         "./lib/EggnogModule.ts",
         "./lib/EnumExt.ts",
         "./lib/ResolvedModule.ts",

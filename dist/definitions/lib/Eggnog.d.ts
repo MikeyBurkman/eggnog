@@ -1,5 +1,5 @@
-import Context = require('./lib/Context');
-import SingleModuleContext = require("./lib/SingleModuleContext");
+import Context = require('./Context');
+import SingleModuleContext = require('./SingleModuleContext');
 declare class Eggnog {
     static createContext(nodeModulesAt?: string): Context;
     static createSingleModuleContext(rootDir: string): SingleModuleContext;
