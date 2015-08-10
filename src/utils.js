@@ -1,14 +1,12 @@
+'use strict';
+
 module.exports = {
 	each: each,
-	moduleIdFromDirectory: moduleIdFromDirectory,
-	directoryFromModuleId: directoryFromModuleId,
 	findSimilar: findSimilar,
 	strEndsWith: strEndsWith,
-	contains: contains,
 	mergeObjects: mergeObjects,
-	isString: isString,
 	lDist: lDist,
-	objectKeys: objectKeys
+	getArgsForFunction: getArgsForFunction
 };
 
 var levenshtein = require('levenshtein');
@@ -21,21 +19,6 @@ function each(o, fn) { // map fn that works for both arrays and objects
 		}
 	}
 	return r;
-}
-
-function moduleIdFromDirectory(directory, idPrefix) {
-	var id = directory.replace(/\//g, '.');
-	if (strEndsWith(id, '.js')) {
-		id = id.substr(0, id.length - '.js'.length);
-	}
-	if (idPrefix) {
-		id = [idPrefix, id].join('.');
-	}
-	return id;
-}
-
-function directoryFromModuleId(moduleId) {
-	return moduleId.replace(/\./g, '/');
 }
 
 function findSimilar(str, arr) {
@@ -58,17 +41,8 @@ function strEndsWith(str, val) {
 	return (suffix == val);
 }
 
-function contains(arr, obj) {
-	for (var i in arr) {
-		if (arr[i] === obj) {
-			return true;
-		}
-	}
-	return false;
-}
-
 // Return a new object which contains a merging of all properties in root and other.
-// Properties in other take precedence. 
+// Properties in other take precedence.
 // IE: mergeObjects({a: true, b: 42}, {a: false, c: 'abc'}) -> {a: false, b: 42, c: 'abc'}
 function mergeObjects(root, other) {
 	var res = {};
@@ -80,14 +54,20 @@ function mergeObjects(root, other) {
 	});
 }
 
-function isString(o) {
-	return typeof o === 'string';
-}
-
 function lDist(str1, str2) {
 	return new levenshtein(str1, str2).distance;
 }
 
-function objectKeys(obj) {
-	return each(obj, function (value, key) { return key; });
+function getArgsForFunction(fn) {
+	var fnRegex = /function (.+)?\((.*)\)/;
+	var argRegex = /(\w+)(,\s)*/g;
+
+	var match = fn.toString().match(fnRegex);
+	if (!match) {
+		throw 'Was not a function: ' + fn;
+	}
+
+	var args = match[2];
+	var argsSplit = args.match(argRegex);
+	return argsSplit || [];
 }

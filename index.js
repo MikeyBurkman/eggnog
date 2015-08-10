@@ -1,13 +1,13 @@
 
 module.exports = {
-	newContext: newContext, 
+	newContext: newContext,
 	newSingleModuleContext: newSingleModuleContext,
 	fileFilters: createFileFilters()
 };
 
-var context = require('./lib/context');
-var utils = require('./lib/utils.js');
-var singleModuleContext = require('./lib/singleModuleContext.js');
+var context = require('./src/context');
+var utils = require('./src/utils.js');
+var singleModuleContext = require('./src/singleModuleContext.js');
 
 function createFileFilters() {
 	return {
@@ -22,14 +22,15 @@ function createFileFilters() {
 
 function newContext(opts) {
 	opts = opts || {};
-	var ctxOpts = {
-		nodeModulesAt: opts.nodeModulesAt
-	};
-	return context.create(ctxOpts);
+	if (typeof(opts) === 'string') {
+		opts = {
+			nodeModulesAt: opts
+		};
+	}
+
+	return context.create(opts);
 }
 
 function newSingleModuleContext(rootDir) {
 	return singleModuleContext.create(rootDir);
 }
-
-

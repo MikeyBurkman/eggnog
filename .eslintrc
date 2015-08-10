@@ -1,0 +1,14 @@
+{
+  "rules": {
+    "strict": [2, "global"],
+    "indent": [2, "tab"],
+    "quotes": [2, "single"],
+    "linebreak-style": [2, "unix"],
+    "semi": [2, "always"],
+    "no-unused-vars": 1,
+  },
+  "env": {
+    "node": true
+  },
+  "extends": "eslint:recommended"
+}

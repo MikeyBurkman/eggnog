@@ -1,3 +1,4 @@
+'use strict';
 
 var utils = require('./utils.js');
 var context = require('./context.js');
@@ -20,7 +21,7 @@ function create(rootDir) {
 
 		var ctx = context.create({
 			externalResolverFn: function(id) {
-				// Specify an external resolver that 
+				// Specify an external resolver that
 				// TODO: Add suggestions if they're missing an import
 				if (!externals.hasOwnProperty(id)) {
 					throw 'External dependency [' + id + '] was not satisfied for module: [' + fname + ']';
@@ -31,16 +32,14 @@ function create(rootDir) {
 				// For single modules, we expect them to provide a mapping of globals
 				// TODO: Suggestions if they forgot/misspelled a global
 				if (!globals.hasOwnProperty(globalId)) {
-					var msg = 'Could '
-					var keys = utils.objectKeys(globals);
-					var similar = utils.findSimilar(globalId, keys);
+					// ?
 
 				}
 				return globals[globalId];
 			}
 		});
 
-		utils.each(locals, function(val, id) {			
+		utils.each(locals, function(val, id) {
 			ctx.addMapping({
 				_id: id,
 				init: function() { return val; }
@@ -53,4 +52,4 @@ function create(rootDir) {
 		var mapping = ctx.addMapping(m, undefined, fname);
 		return ctx.loadModule(mapping.id);
 	}
-};
+}
