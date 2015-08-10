@@ -7,7 +7,7 @@ module.exports = {
 	resolveModuleInitArguments: resolveModuleInitArguments
 };
 
-var levenshtein = require('levenshtein');
+var levenshtein = require('fast-levenshtein');
 
 function each(o, fn) { // map fn that works for both arrays and objects
 	var r = [];
@@ -24,16 +24,12 @@ function findSimilar(str, arr) {
 	var threshold = 4;
 	for (var i in arr) {
 		var x = arr[i];
-		var dist = lDist(str, x);
+		var dist = levenshtein.get(str, x);
 		if (dist < threshold) {
 			ret.push(x);
 		}
 	}
 	return ret;
-}
-
-function lDist(str1, str2) {
-	return new levenshtein(str1, str2).distance;
 }
 
 function getArgsForFunction(fn) {
@@ -87,7 +83,7 @@ function resolveModuleInitArguments(module, resolver) {
 			if (argNameLower === dep.id[dep.id.length-1]) {
 				if (matchId) {
 					throw new Error('Cannot use argument injection for argument [' + argName +
-					'] because there are two dependencies that match: [' + matchId.id.unnormalized + '] and [' +
+					'] because there are two dependencies that match: [' + matchId.unnormalized + '] and [' +
 					dep.unnormalized + ']');
 				}
 
