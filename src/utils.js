@@ -3,10 +3,8 @@
 module.exports = {
 	each: each,
 	findSimilar: findSimilar,
-	strEndsWith: strEndsWith,
-	mergeObjects: mergeObjects,
-	lDist: lDist,
-	getArgsForFunction: getArgsForFunction
+	normalizeModuleId: normalizeModuleId,
+	resolveModuleInitArguments: resolveModuleInitArguments
 };
 
 var levenshtein = require('levenshtein');
@@ -34,26 +32,6 @@ function findSimilar(str, arr) {
 	return ret;
 }
 
-function strEndsWith(str, val) {
-	var slen = str.length;
-	var vlen = val.length;
-	var suffix = str.substr(slen-vlen, vlen);
-	return (suffix == val);
-}
-
-// Return a new object which contains a merging of all properties in root and other.
-// Properties in other take precedence.
-// IE: mergeObjects({a: true, b: 42}, {a: false, c: 'abc'}) -> {a: false, b: 42, c: 'abc'}
-function mergeObjects(root, other) {
-	var res = {};
-	each(root, function(value, key) {
-		res[key] = value;
-	});
-	each(other, function(value, key) {
-		res[key] = value;
-	});
-}
-
 function lDist(str1, str2) {
 	return new levenshtein(str1, str2).distance;
 }
@@ -74,4 +52,54 @@ function getArgsForFunction(fn) {
   return args.split(',').map(function(s) {
     return s.trim();
   });
+}
+
+function normalizeModuleId(id) {
+	var prefix, idVal;
+
+	id = id.toLowerCase();
+
+	var split = id.split('::');
+	if (split.length == 1) {
+		prefix = '';
+		idVal = id;
+	} else if (split.length > 2) {
+		throw 'Invalid ID: ' + id;
+	} else {
+		prefix = split[0];
+		idVal = split[1];
+	}
+
+	return {
+		unnormalized: id,
+		prefix: prefix,
+		id: idVal.split('/')
+	};
+}
+
+function resolveModuleInitArguments(module, resolver) {
+	var args = getArgsForFunction(module.init);
+	return args.map(function(argName) {
+		var matchId;
+		var argNameLower = argName.toLowerCase(); // TODO: This should match normalizeId
+		for (var depIdx in module.requires) {
+			var dep = module.requires[depIdx];
+			if (argNameLower === dep.id[dep.id.length-1]) {
+				if (matchId) {
+					throw new Error('Cannot use argument injection for argument [' + argName +
+					'] because there are two dependencies that match: [' + matchId.id.unnormalized + '] and [' +
+					dep.unnormalized + ']');
+				}
+
+				matchId = dep;
+			}
+		}
+
+		if (!matchId) {
+			// TODO: Suggestions
+			throw new Error('Could not find dependency for argument: [' + argName + ']');
+		}
+
+		return resolver.require(matchId.unnormalized);
+	});
 }

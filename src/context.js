@@ -1,10 +1,6 @@
 'use strict';
 
-module.exports = {
-	create: create
-};
-
-// TODO: Relative IDs (use './someService' instead of 'services.blah.someService')
+module.exports = Context;
 
 var utils = require('./utils.js');
 var fileScanner = require('./fileScanner.js');
@@ -12,11 +8,12 @@ var fileScanner = require('./fileScanner.js');
 var fs = require('fs');
 var path = require('path');
 
-function create(opts) {
+function Context(opts) {
 
 	//// Configuration ////
 	opts = opts || {};
 
+	var srcDirectory = opts.srcDirectory;
 	var nodeModulesAt = opts.nodeModulesAt;
 	var resolverOverrides = opts.resolvers || {};
 
@@ -33,33 +30,10 @@ function create(opts) {
 	];
 	var scopes = ['singleton', 'instance'];
 
-	var moduleSeparator = '/';
-
 	//// Local variables ////
 
 	var mappings = {};
 	var mainModule = undefined;
-
-	var resolvers = (function() {
-		var moduleResolver = {
-			'': localModuleResolver,
-			'lib': nodeModulesResolver,
-			'global': nodeJsGlobalResolver
-		};
-
-		// Add any overrides
-		utils.each(resolverOverrides, function(resolverFn, resolverPrefix) {
-			if (resolverFn) {
-				// New resolver
-				moduleResolver[resolverPrefix] = resolverFn;
-			} else {
-				// Allow users to get rid of the old resolver
-				delete moduleResolver[resolverPrefix];
-			}
-		});
-
-		return moduleResolver;
-	})();
 
 	// Contains modules already resolved (so we don't call init twice)
 	var resolved = {};
@@ -68,31 +42,46 @@ function create(opts) {
 	// This allows us to detect circular dependencies.
 	var resolving = [];
 
+	var resolvers = {
+		'': localModuleResolverFn,
+		'lib': nodeModulesResolverFn,
+		'global': nodeJsGlobalResolverFn
+	};
+
 	//// Public API ////
 
-	var moduleContext = {
-		addDirectory: addDirectory,
-		//addMapping: addMapping,
-		loadModule: loadModule,
-		main: loadMainModule,
-		getMainModuleId: getMainModuleId
-	};
-	return moduleContext;
+	var moduleContext = this;
+	this.loadModule = loadModule;
+	this.main = loadMainModule;
+	this.getMainModuleId = getMainModuleId;
 
 	//////////////////
+
+	//// Initialization ////
+
+	// Add any resolver overrides
+	utils.each(resolverOverrides, function(resolverFn, resolverPrefix) {
+		if (resolverFn) {
+			// New resolver
+			resolvers[resolverPrefix] = resolverFn;
+		} else {
+			// Allow users to get rid of the old resolver
+			delete resolvers[resolverPrefix];
+		}
+	});
+
+	// Scan the given directory and add everything to our modules
+	utils.each(fileScanner(srcDirectory), function(module, filename) {
+		addMapping(module, filename);
+	});
+
+	//// Functions /////
 
 	function getMainModuleId() {
 		return mainModule;
 	}
 
-	function addDirectory(opts) {
-		var idPrefix = undefined; // TODO
-		utils.each(fileScanner(opts), function(module, filename) {
-			addMapping(module, idPrefix, filename);
-		});
-	}
-
-	function addMapping(m, idPrefix, filename) {
+	function addMapping(m, filename) {
 
 		var msg;
 
@@ -118,7 +107,7 @@ function create(opts) {
 			throwError(buildMissingDepMsg(msg, scope, scopes));
 		}
 
-		var normId = normalizeId(id);
+		var normId = utils.normalizeModuleId(id);
 		id = normId.unnormalized;
 
 		if (mappings[id]) {
@@ -131,7 +120,7 @@ function create(opts) {
 		}
 
 		// Verify that each required module has a correct (or no) prefix
-		requires = requires.map(normalizeId);
+		requires = requires.map(utils.normalizeModuleId);
 
 		var validPrefixes = Object.keys(resolvers);
 		utils.each(requires, function(requiresId) {
@@ -158,8 +147,8 @@ function create(opts) {
 	}
 
 	function loadModule(id, parentId) {
-		id = normalizeId(id);
-		return localModuleResolver(id, moduleContext, parentId);
+		id = utils.normalizeModuleId(id);
+		return resolvers[''](id, moduleContext, parentId);
 	}
 
 	function loadMainModule() {
@@ -172,29 +161,6 @@ function create(opts) {
 	function allExternalIds() {
 		var modulePath = path.join(nodeModulesAt, 'node_modules');
 		return fs.readdirSync(modulePath);
-	}
-
-	function normalizeId(id) {
-		var prefix, idVal;
-
-		id = id.toLowerCase();
-
-		var split = id.split('::');
-		if (split.length == 1) {
-			prefix = '';
-			idVal = id;
-		} else if (split.length > 2) {
-			throw 'Invalid ID: ' + id;
-		} else {
-			prefix = split[0];
-			idVal = split[1];
-		}
-
-		return {
-			unnormalized: id,
-			prefix: prefix,
-			id: idVal.split(moduleSeparator)
-		};
 	}
 
 	function buildMissingDepMsg(msg, id, possibleIds) {
@@ -214,7 +180,7 @@ function create(opts) {
 		});
 	}
 
-	function localModuleResolver(normalizedId, context, parentId) {
+	function localModuleResolverFn(normalizedId, context, parentId) {
 		var msg;
 
 		var id = normalizedId.unnormalized;
@@ -259,30 +225,7 @@ function create(opts) {
 
 			var resolver = new Resolver(m);
 
-			var args = utils.getArgsForFunction(m.init);
-			var initArgs = args.map(function(argName) {
-				var matchId;
-				var argNameLower = argName.toLowerCase();
-				for (var depIdx in m.requires) {
-					var dep = m.requires[depIdx];
-					if (argNameLower === dep.id[dep.id.length-1]) {
-						if (matchId) {
-							throwError('Cannot use argument injection for argument [' + argName +
-							'] because there are two dependencies that match: [' + matchId.id.unnormalized + '] and [' +
-							dep.unnormalized + ']');
-						}
-
-						matchId = dep;
-					}
-				}
-
-				if (!matchId) {
-					// TODO: Suggestions
-					throwError('Could not find dependency for argument: [' + argName + ']');
-				}
-
-				return resolver.require(matchId.unnormalized);
-			});
+			var initArgs = utils.resolveModuleInitArguments(m, resolver);
 
 			moduleResult = m.init.apply(resolver, initArgs);
 			if (moduleResult === undefined) {
@@ -302,7 +245,8 @@ function create(opts) {
 		return moduleResult;
 	}
 
-	function nodeJsGlobalResolver(normalizedId, context, parentId) {
+	// Returns a variable that available in the list of globals
+	function nodeJsGlobalResolverFn(normalizedId, context, parentId) {
 		var globalId = normalizedId.id[0]; // TODO: Verify only one ID
 		var x = global[globalId];
 		if (!x) {
@@ -316,7 +260,7 @@ function create(opts) {
 	}
 
 	// The equivalent of require() in normal node apps
-	function nodeModulesResolver(normalizedId, context, parentId) {
+	function nodeModulesResolverFn(normalizedId, context, parentId) {
 		// TODO: Cache the results of these so we don't need to do existsSync() every time
 		if (!nodeModulesAt) {
 			throwError('Before you can load external dependencies, you must specify where node_modules can be found by ' +
@@ -348,7 +292,7 @@ function create(opts) {
 
 	function Resolver(mapping) {
 		this.require = function(id) {
-			var normId = normalizeId(id);
+			var normId = utils.normalizeModuleId(id);
 
 			// Verify that id is in the requires
 			var unnormalizedRequires = mapping.requires.map(function(r) {

@@ -4,44 +4,22 @@ module.exports = scan;
 
 var glob = require('glob');
 
-var utils = require('./utils.js');
+function scan(directory) {
 
-function scan(opts) {
-	var baseDir;
-	var excludeFn;
-
-	opts = opts || {};
-
-	if (typeof(opts) === 'string') {
-		// Just assume the opts is the file path, all other options are default
-		opts = {
-			baseDir: opts
-		};
-	}
-
-	baseDir = opts.baseDir;
-
-	excludeFn = opts.excludeFn || function(_) { return false; };
-
-	var baseDirLen = baseDir.length;
-
-	var searchDir = baseDir + '/**/*.js';
-	var filenames = glob.sync(searchDir);
+	var directoryLen = directory.length;
 
 	var files = {};
-	utils.each(filenames, function(name) {
-		// Remove basedir from the name
-		var d = name.substr(baseDirLen+1);
-		// Remove .js from it as well
-		d = d.substr(0, d.length-('.js'.length));
+	glob.sync(directory + '/**/*.js')
+		.map(function(filename) {
+			files[getModuleName(filename)] = require(filename);
+		});
 
-		if (!excludeFn(d)) {
-			var m = require(name);
-			if (m) {
-				files[d] = m;
-			}
-		}
-	});
+	function getModuleName(filename) {
+		// Remove the directory from the name
+		var name = filename.substr(directoryLen+1);
+		// Remove .js from it as well
+		return name.substr(0, name.length-('.js'.length));
+	}
 
 	return files;
 }
