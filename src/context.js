@@ -259,7 +259,32 @@ function create(opts) {
 
 			var resolver = new Resolver(m);
 
-			moduleResult = m.init.call(resolver);
+			var args = utils.getArgsForFunction(m.init);
+			var initArgs = args.map(function(argName) {
+				var matchId;
+				var argNameLower = argName.toLowerCase();
+				for (var depIdx in m.requires) {
+					var dep = m.requires[depIdx];
+					if (argNameLower === dep.id[dep.id.length-1]) {
+						if (matchId) {
+							throwError('Cannot use argument injection for argument [' + argName +
+							'] because there are two dependencies that match: [' + matchId.id.unnormalized + '] and [' +
+							dep.unnormalized + ']');
+						}
+
+						matchId = dep;
+					}
+				}
+
+				if (!matchId) {
+					// TODO: Suggestions
+					throwError('Could not find dependency for argument: [' + argName + ']');
+				}
+
+				return resolver.require(matchId.unnormalized);
+			});
+
+			moduleResult = m.init.apply(resolver, initArgs);
 			if (moduleResult === undefined) {
 				moduleResult = resolver.exports;
 			}

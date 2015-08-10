@@ -59,15 +59,19 @@ function lDist(str1, str2) {
 }
 
 function getArgsForFunction(fn) {
-	var fnRegex = /function (.+)?\((.*)\)/;
-	var argRegex = /(\w+)(,\s)*/g;
+  var fnRegex = /function (.+)?\((.*)\)/;
 
-	var match = fn.toString().match(fnRegex);
-	if (!match) {
-		throw 'Was not a function: ' + fn;
-	}
+  var match = fn.toString().match(fnRegex);
+  if (!match) {
+    throw 'Was not a function';
+  }
 
-	var args = match[2];
-	var argsSplit = args.match(argRegex);
-	return argsSplit || [];
+  var args = match[2];
+  if (args.length === 0) {
+    return [];
+  }
+
+  return args.split(',').map(function(s) {
+    return s.trim();
+  });
 }
