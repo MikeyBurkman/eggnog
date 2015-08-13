@@ -1,6 +1,8 @@
 ## eggnog ##
 What require() should be.
 
+See the [wiki](https://github.com/MikeyBurkman/eggnog/wiki) for complete documentation.
+
 eggnog is a simple, lightweight dependency injection framework for NodeJs
 - Designed for organizing applications that are structured into smaller modules
 - Having the ability to unit test, without being opinionated on the framework, was a top priority 
@@ -47,5 +49,3 @@ context.main(); // Find the "main" module, load it, and run its init() function,
 ```
 
 That's it! eggnog will handle the rest of the configuration.
-
-See the [wiki](https://github.com/MikeyBurkman/eggnog/wiki) for complete documentation.
