@@ -16,7 +16,7 @@ Current Version: 1.0.0
 
 ##### Here's what a typical NodeJs module might look like:
 ```js
-// server/index.js
+// src/server/index.js
 module.exports = {
   requires: [
     'utils/config', // Local module, defined below
@@ -48,7 +48,7 @@ function init(config, express, console) {
 
 ##### Our static config file that could be shared by multiple modules
 ```js
-// utils/config.js
+// src/utils/config.js
 module.exports = function() {
   return {
     serverPort: 8080,
@@ -61,11 +61,11 @@ module.exports = function() {
 
 ##### What about configuring eggnog to make the app run?
 ```js
-// Probably index.js, at the root of our project
+// index.js, at the root of our project
 var Context = require('eggnog').Context;
 
 var context = new Context({
-  srcDirectory: __dirname + '/src', // Where your source is
+  srcDirectory: __dirname + '/src', // Where your source is. Our code is all in src/
   nodeModulesAt: __dirname // Where the node_modules directory is (for requiring external libraries)
 });
 
