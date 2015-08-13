@@ -2,7 +2,7 @@
 What require() should be.
 
 eggnog is a simple, lightweight dependency injection framework for NodeJs
-- Designed for organzing applications that are structured into smaller modules
+- Designed for organizing applications that are structured into smaller modules
 - Having the ability to unit test, without being opinionated on the framework, was a top priority 
 - Minimal boilerplate -- Convention over configuration
 - No config files or factories to define everything -- eggnog crawls your project for you
