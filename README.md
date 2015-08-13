@@ -1,11 +1,11 @@
 ## eggnog ##
 What Require() should be.
 
-eggnog is a simple, lightweight module and dependency injection framework for NodeJs, especially made for medium-to-large projects that include many files.
-- Minimal boilerplate
+eggnog is a simple, lightweight module and dependency injection framework for NodeJs, especially made for medium-to-large projects that are organized into modules
+- Having the ability to unit test, without being opinionated on the framework, was a top priority 
+- Minimal boilerplate -- Convention over configuration
 - No config files or factories to define everything -- eggnog crawls your project for you
-- No need to require anything special in your files -- eggnog acts more like a spec than a dependency
-- Intuitively unit test individual modules with virtually any testing framework
+- No need to require any special dependencies in your files -- eggnog acts more like a spec than a library
 
 [Link to NPM](https://www.npmjs.com/package/eggnog)
 
@@ -28,22 +28,34 @@ Here's what a typical NodeJs module might look like:
 ```js
 module.exports = {
   requires: [
-    'utils/logger',
+    'utils/config',
     'services/myService',
     'lib::express',
-    'lib::fs',
     'node::console'
   ],
   init: init
 };
 
-function init(logger, myService, express, fs, console) {
+function init(config, myService, express, console) {
   ...
   this.exports = {
     // Export for this module
   };
 }
 ```
+
+##### What about configuration?
+```js
+var Context = require('eggnog').Context;
+
+var context = new Context({
+  srcDirectory: __dirname + '/src',
+  nodeModulesAt: __dirname
+});
+
+context.main();
+```
+That's it! eggnog will handle the rest of the configuration.
 
 ### What's wrong with require()?
 Importing dependencies with require() has several issues:
@@ -72,14 +84,14 @@ Importing dependencies with require() has several issues:
   - Build any type of application you like with it, big or small, CLI or web app.
   - eggnog does not interfere with popular frameworks like Express.
 
-### Here's our typical eggnog module looks like, but with some comments to help clarify things:
+### Here's our typical eggnog module looks like, but with some comments to help clarify things. We'll also include a few extra things for a more complete example:
 ```js
 // module.exports defines the metadata for your module: what it needs and how to initialize it
 module.exports = {
   requires: [
-    'utils/logger', // This is the file at <app root>/utils/logger.js
+    'utils/config', // This is the file at <app root>/utils/config.js
     'services/myService', // <app root>/services/myService.js
-    'lib::express', // Anything prefixed with 'lib::' is a core or package.json dependency
+    'lib::express', // Anything prefixed with 'lib::' is a core or package.json dependency. Like require('express')
     'lib::fs', // This is like require('fs')
     'node::console' // Anything with 'node::' are Node global variables, like console or process
   ],
@@ -88,7 +100,7 @@ module.exports = {
 
 // By convention, we recommend having your init function separate.
 // The argument names match the last part of the names of the required dependencies
-function init(logger, myService, express, fs, console) {
+function init(config, myService, express, fs, console) {
   ...
   this.exports = {
     // This is what your module.exports would have originally been
@@ -106,11 +118,12 @@ In this example, your logger utility is assumed to be in <app root>/utils/logger
   - eggnog is based around the creation of a context, which contains all mappings of module IDs to the files.
   - In your entry point (often server.js), you will create a new context, point it to your root directory, and then tell it to start your app.
 
+We already saw this code example before, but here it is again
 ```js
 // server.js or app.js
-var Context = require('eggnog').Context;
+var eggnog = require('eggnog');
 
-var context = new Context({
+var context = new eggnog.Context({
   srcDirectory: __dirname + '/src', // All source files are expected to be in this folder
   nodeModulesAt: __dirname // This is required if your app has dependencies in package.json
 });
@@ -187,9 +200,9 @@ Because each module defines its dependencies, but not how to find them, it is po
 eggnog makes this easy and simple:
 
 ```js
-var TestContext = require('eggnog').TestContext;
+var eggnog = require('eggnog');
 
-var context = new TestContext(__dirname + '/src');
+var context = new eggnog.TestContext(__dirname + '/src');
 
 // Assume the file we want to test is 'services.myService'
 // Assume it has a dependency on 'node::console'
@@ -211,7 +224,7 @@ See the example app below for how to use eggnog with Mocha.
 Notes: 
   - eggnog is not a unit test framework. It just allows you to easily inject mock dependencies. Use a real testing framework in conjunction with eggnog.
   - It is not possible (or at least not easy) to use a mix of real and mock implementations. This is on purpose. Using real implementations of dependencies would not make this a unit test.
-  - Loading modules is cheap. (Remember, require() is used behind the scenes, which caches each file.) Create a new module for each individual test, to make sure each test is completely independent of each other.
+  - Loading modules is cheap. (Remember, require() is used behind the scenes, which caches each file.) Create a new module for each individual test, to make sure each test is completely independent of the others.
 
 ### Linting
 It's advised that you remove all NodeJs references from your lint config file, and only add the global `modules` variable, as that's really the only global variable your modules should be using. 
