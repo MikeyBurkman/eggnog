@@ -32,7 +32,7 @@ module.exports = {
     'utils/config',
     'services/myService',
     'lib::express',
-    'node::console'
+    'global::console'
   ],
   init: init
 };
@@ -95,7 +95,7 @@ module.exports = {
     'utils/config', // This is the file at <app root>/utils/config.js
     'services/myService', // <app root>/services/myService.js
     'lib::express', // Anything prefixed with 'lib::' is a core or package.json dependency. Like require('express')
-    'node::console' // Anything with 'node::' are Node global variables, like console or process
+    'global::console' // Anything with 'global::' are Node global variables, like console or process
   ],
   init: init
 };
@@ -220,11 +220,11 @@ var eggnog = require('eggnog');
 var context = new eggnog.TestContext(__dirname + '/src');
 
 // Assume the file we want to test is 'services.myService'
-// Assume it has a dependency on 'node::console'
+// Assume it has a dependency on 'global::console'
 // The first argument is the ID for the module we're testing
 // The second argument is an object containing implementations for each depedency
 var service = context.createModule('services/myService', {
-  'node::console': {
+  'global::console': {
     log: function(msg) {
       ...
     }
