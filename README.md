@@ -1,5 +1,5 @@
-## eggnog ##
-What require() should be.
+# eggnog
+### What require() should be.
 
 See the [wiki](https://github.com/MikeyBurkman/eggnog/wiki) for complete documentation.
 
@@ -16,28 +16,52 @@ Current Version: 1.0.0
 
 ##### Here's what a typical NodeJs module might look like:
 ```js
+// server/index.js
 module.exports = {
   requires: [
-    'utils/config',
-    'services/myService',
-    'lib::express',
-    'global::console'
+    'utils/config', // Local module, defined below
+    'lib::express', // ExpressJs
+    'global::console' // Node's built-in console
   ],
+  isMain: true, // Indicates this is the main module for our app
   init: init
 };
 
-function init(config, myService, express, console) {
-  // Real code here that uses the above injected 
-  ...
+function init(config, express, console) {
+  // Pretty much the Express.js Hello World app, verbatim
   
-  this.exports = {
-    // Export for this module
-  };
+  var app = express();
+  
+  app.get('/', function (req, res) {
+    res.send('Hello World!');
+  });
+  
+  var server = app.listen(config.serverPort, function () {
+    var host = server.address().address;
+    var port = server.address().port;
+    console.log('Example app listening at http://%s:%s', host, port);
+  });
+  
+  return app;
 }
 ```
 
-##### What about configuration?
+##### Our static config file that could be shared by multiple modules
 ```js
+// utils/config.js
+module.exports = function() {
+  return {
+    serverPort: 8080,
+    foo: true,
+    barUser: 'Mikey',
+    ...
+  };
+};
+```
+
+##### What about configuring eggnog to make the app run?
+```js
+// Probably index.js, at the root of our project
 var Context = require('eggnog').Context;
 
 var context = new Context({
@@ -45,7 +69,14 @@ var context = new Context({
   nodeModulesAt: __dirname // Where the node_modules directory is (for requiring external libraries)
 });
 
-context.main(); // Find the "main" module, load it, and run its init() function, returning its exports if there were any
+// context.main() will find the "main" module, load it and any transitive dependencies, and execute its init() function
+// It then returns whatever the main module returned, if anything
+var app = context.main();
 ```
 
-That's it! eggnog will handle the rest of the configuration.
+##### And launching our app is nothing special
+```sh
+node index.js
+```
+
+That's it! eggnog will handle the rest.
