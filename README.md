@@ -114,6 +114,17 @@ All dependencies listed in the imports in `module.exports` will available on the
 
 In this example, your logger utility is assumed to be in <app root>/utils/logger.js, and so eggnog will automatically pick it up and make it available with the ID 'utils/logger'.
 
+##### Shortcut configuration
+If your module has no dependencies, simply export a function and eggnog will handle the rest
+```js
+module.exports = function init() {
+  ...
+  this.exports = {
+    // This is what your module.exports would have originally been
+  };
+}
+```
+
 ### How do I start my app now?
   - eggnog is based around the creation of a context, which contains all mappings of module IDs to the files.
   - In your entry point (often server.js), you will create a new context, point it to your root directory, and then tell it to start your app.
