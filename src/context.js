@@ -123,7 +123,7 @@ function Context(opts) {
 		requires = requires.map(utils.normalizeModuleId);
 
 		var validPrefixes = Object.keys(resolvers);
-		utils.each(requires, function(requiresId) {
+		requires.forEach(function(requiresId) {
 			if (validPrefixes.indexOf(requiresId.prefix) === -1) {
 				msg = 'Unrecognized prefix for require: [' + requiresId.unnormalized + '] for ID [' + id + ']';
 				throwError(buildMissingDepMsg(msg, requiresId.prefix, validPrefixes));
