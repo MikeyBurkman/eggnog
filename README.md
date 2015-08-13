@@ -38,7 +38,9 @@ module.exports = {
 };
 
 function init(config, myService, express, console) {
+  // Real code here that uses the above injected 
   ...
+  
   this.exports = {
     // Export for this module
   };
@@ -85,7 +87,7 @@ Importing dependencies with require() has several issues:
   - Build any type of application you like with it, big or small, CLI or web app.
   - eggnog does not interfere with popular frameworks like Express.
 
-### Here's our typical eggnog module looks like, but with some comments to help clarify things. We'll also include a few extra things for a more complete example:
+### Here's our typical eggnog module looks like, but with some comments to help clarify things:
 ```js
 // module.exports defines the metadata for your module: what it needs and how to initialize it
 module.exports = {
@@ -93,7 +95,6 @@ module.exports = {
     'utils/config', // This is the file at <app root>/utils/config.js
     'services/myService', // <app root>/services/myService.js
     'lib::express', // Anything prefixed with 'lib::' is a core or package.json dependency. Like require('express')
-    'lib::fs', // This is like require('fs')
     'node::console' // Anything with 'node::' are Node global variables, like console or process
   ],
   init: init
@@ -101,8 +102,10 @@ module.exports = {
 
 // By convention, we recommend having your init function separate.
 // The argument names match the last part of the names of the required dependencies
-function init(config, myService, express, fs, console) {
+function init(config, myService, express, console) {
+  // Real code here that uses the above injected 
   ...
+  
   this.exports = {
     // This is what your module.exports would have originally been
   };
