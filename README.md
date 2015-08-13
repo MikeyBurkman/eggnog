@@ -1,7 +1,8 @@
 ## eggnog ##
 What require() should be.
 
-eggnog is a simple, lightweight module and dependency injection framework for NodeJs, especially made for medium-to-large projects that are organized into modules
+eggnog is a simple, lightweight dependency injection framework for NodeJs
+- Designed for organzing applications that are structured into smaller modules
 - Having the ability to unit test, without being opinionated on the framework, was a top priority 
 - Minimal boilerplate -- Convention over configuration
 - No config files or factories to define everything -- eggnog crawls your project for you
@@ -66,18 +67,18 @@ Importing dependencies with require() has several issues:
 
 ### What does eggnog do?
   - Crawls your source code and automatically discovers your files.
-  - Provides a total replacement for require() in user code. (Also allows injecting, and thus mocking, of global variables as well.)
-  - Provide a standard and lightweight convention to define modules and their depencies. This includes both local (relative) files, external (package.json or core node), and global dependencies
+  - Provides a total replacement for require() in user code. All dependencies (including global variables) are injected instead.
+  - Provide a standard and lightweight convention to define modules and their depencies.
   - Uses require() behind the scenes, so packages and files are imported the way you expect them to be.
-  - Injects dependencies, rather than having files fetch dependencies, making unit testing much easier.
+  - Provides a way to specify mock implementations of dependencies, for easier unit testing.
   - Detects circular dependencies in your app.
   - Provides some basic scoping of modules.
 
-### Why is that important?
-  - Local files are always identified by their folder structure. A file at <app root>/foo/bar.js can be injected with the ID 'foo/bar'.
-  - External files are identifiable with the same name you would use with require(). require('express') becomes 'lib::express'.
-  - Requires dependency information to be listed at the top of every file, instead of being scattered. Consistency.
-  - Most files only need to follow a convention to work with eggnog, and do not require any extra dependencies of their own. (In this way, you are locked in only to a convention, and not to the eggnog tool itself.)
+### Why is all of that important?
+  - All modules follow a standard convention. See at a glance what a module's dependencies are.
+  - Local modules are always identified by their folder structure. A file at <app root>/foo/bar.js can be injected with the ID 'foo/bar', no matter where you are in the application.
+  - Unit testing modules with dependencies like `request` can now be done without connecting to a server
+  - Circular dependencies are almost always unintentional bugs that are sometimes difficult to find.
 
 ### What type of projects can I use eggnog in?
   - eggnog is as un-opinionated as possible. (Except for a few things like not having circular dependencies and not tying modules to external implementations.)
@@ -112,7 +113,7 @@ Note the complete lack of `require()` anywhere! You should no longer need to use
 
 All dependencies listed in the imports in `module.exports` will available on the eggnog object passed to the init() function as arguments. The init() function will only be called once all the imports have been resolved.
 
-In this example, your logger utility is assumed to be in <app root>/utils/logger.js, and so eggnog will automatically pick it up and make it available with the ID 'utils/logger'.
+In this example, your logger utility is assumed to be in `<app root>/utils/config.js`, and so eggnog will automatically pick it up and make it available with the ID `'utils/config'`.
 
 ##### Shortcut configuration
 If your module has no dependencies, simply export a function and eggnog will handle the rest
@@ -252,3 +253,9 @@ See [this example app](https://github.com/MikeyBurkman/eggnog-exampleapp)
   - Cutesy names are popular these days.
   - Like Google, it works nicely as a verb.
   - There was no other JS project in NPM in with this name.
+
+### Planned Features
+  - A Mocha plugin to make it even easier to test
+  - Partial imports, like ES6 `import {x} from './foo';`
+  - Aspects around services (maybe)
+  - Injecting collections of services (maybe)
