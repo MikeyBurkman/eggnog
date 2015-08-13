@@ -11,17 +11,17 @@ eggnog is a simple, lightweight module and dependency injection framework for No
 
 Current Version: 1.0.0
 
-- [What's wrong with require()?](https://github.com/MikeyBurkman/eggnog/blob/master/README.md#whats-wrong-with-require)
-- [What does eggnog do?](https://github.com/MikeyBurkman/eggnog/blob/master/README.md#what-does-eggnog-do)
-- [Why is that important?](https://github.com/MikeyBurkman/eggnog/blob/master/README.md#why-is-that-important)
-- [What type of projects can I use eggnog in?](https://github.com/MikeyBurkman/eggnog/blob/master/README.md#what-type-of-projects-can-i-use-eggnog-in)
-- [How do I start my app?](https://github.com/MikeyBurkman/eggnog/blob/master/README.md#how-do-i-start-my-app-now)
-- [Module Scoping](https://github.com/MikeyBurkman/eggnog/blob/master/README.md#scoping)
-- [Argument Naming Conflicts](https://github.com/MikeyBurkman/eggnog/blob/master/README.md#naming-conflicts)
-- [Unit Testing](https://github.com/MikeyBurkman/eggnog/blob/master/README.md#unit-testing)
-- [Example Application](https://github.com/MikeyBurkman/eggnog/blob/master/README.md#example-application)
-- [Misc Notes](https://github.com/MikeyBurkman/eggnog/blob/master/README.md#misc-notes)
-- [Why is it Called eggnog?](https://github.com/MikeyBurkman/eggnog/blob/master/README.md#why-is-it-called-eggnog)
+- [What's wrong with require()?](https://github.com/MikeyBurkman/eggnog#whats-wrong-with-require)
+- [What does eggnog do?](https://github.com/MikeyBurkman/eggnog#what-does-eggnog-do)
+- [Why is that important?](https://github.com/MikeyBurkman/eggnog#why-is-that-important)
+- [What type of projects can I use eggnog in?](https://github.com/MikeyBurkman/eggnog#what-type-of-projects-can-i-use-eggnog-in)
+- [How do I start my app?](https://github.com/MikeyBurkman/eggnog#how-do-i-start-my-app-now)
+- [Module Scoping](https://github.com/MikeyBurkman/eggnog#scoping)
+- [Argument Naming Conflicts](https://github.com/MikeyBurkman/eggnog#naming-conflicts)
+- [Unit Testing](https://github.com/MikeyBurkman/eggnog#unit-testing)
+- [Example Application](https://github.com/MikeyBurkman/eggnog#example-application)
+- [Misc Notes](https://github.com/MikeyBurkman/eggnog#misc-notes)
+- [Why is it Called eggnog?](https://github.com/MikeyBurkman/eggnog#why-is-it-called-eggnog)
 
 ### Since it's customary to start with sample code...
 Here's what a typical NodeJs module might look like:
