@@ -25,9 +25,12 @@
     "dependency",
     "dependencies",
     "injection",
+    "ioc",
     "di",
     "import",
-    "framework"
+    "framework",
+    "configuration",
+    "autowire"
   ],
   "engines": {
     "node": ">=0.10.0"
