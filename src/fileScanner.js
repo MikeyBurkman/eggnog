@@ -10,7 +10,7 @@ function scan(directory) {
 
 	var files = {};
 	glob.sync(directory + '/**/*.js')
-		.map(function(filename) {
+		.forEach(function(filename) {
 			files[getModuleName(filename)] = require(filename);
 		});
 

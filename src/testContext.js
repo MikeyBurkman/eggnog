@@ -25,7 +25,7 @@ function TestContext(srcDirectory) {
       requires: (loaded.requires || []).map(utils.normalizeModuleId)
     };
 
-    // Verify that each thing in module.requires
+    // Verify that each thing in module.requires is accounted for in the dependencies argument
     for (var reqIdx in module.requires) {
       var req = module.requires[reqIdx].unnormalized;
       if (!dependencies.hasOwnProperty(req)) {
