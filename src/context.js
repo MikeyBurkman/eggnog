@@ -13,6 +13,14 @@ function Context(opts) {
 	//// Configuration ////
 	opts = opts || {};
 
+	if (typeof(opts) === 'string') {
+		// Assume this is the source directory, and use default node_modules dir
+		opts = {
+			srcDirectory: path.join(process.cwd(), opts),
+			nodeModulesAt: process.cwd()
+		}
+	}
+
 	var srcDirectory = opts.srcDirectory;
 	var nodeModulesAt = opts.nodeModulesAt;
 	var resolverOverrides = opts.resolvers || {};
