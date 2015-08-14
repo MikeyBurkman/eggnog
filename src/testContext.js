@@ -36,18 +36,12 @@ function TestContext(srcDirectory) {
     var resolver = {
       require: function(id) {
         return dependencies[id];
-      },
-      exports: undefined
+      }
     };
 
     var initArgs = utils.resolveModuleInitArguments(module, resolver);
 
-    var moduleResult = module.init.apply(resolver, initArgs);
-    if (moduleResult === undefined) {
-      moduleResult = resolver.exports;
-    }
-
-    return moduleResult;
+    return module.init.apply(resolver, initArgs);
 
   }
 

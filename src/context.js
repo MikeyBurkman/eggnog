@@ -228,9 +228,6 @@ function Context(opts) {
 			var initArgs = utils.resolveModuleInitArguments(m, resolver);
 
 			moduleResult = m.init.apply(resolver, initArgs);
-			if (moduleResult === undefined) {
-				moduleResult = resolver.exports;
-			}
 
 			// This ID resolved, so pop the last item (normId) from the resolving stack
 			resolving.pop();
@@ -307,8 +304,6 @@ function Context(opts) {
 			return resolvers[normId.prefix](normId, moduleContext, mapping.id);
 
 		};
-
-		this.exports = undefined;
 	}
 
 }
