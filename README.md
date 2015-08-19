@@ -76,8 +76,10 @@ module.exports = function() {
 // index.js
 // This file needs to be at the root of our project, alongside the node_modules directory
 
+var eggnog = require('eggnog');
+
 // All of our source files are ./src
-var context = new require('eggnog').Context('src');
+var context = new eggnog.Context('./src');
 
 // context.loadModule('server/index') will find the "server/index" module in the 'src' directory, 
 //  load it and any transitive dependencies, and then execute its function, automatically supplying 
