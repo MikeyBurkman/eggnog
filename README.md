@@ -17,13 +17,13 @@ Current Version: 1.1.0
 ##### Let's use this file structure for our application:
 ```
 index.js
-node_modules
-  express
+node_modules/
+  express/
     ...
-src
-  server
+src/
+  server/
     index.js
-  utils
+  utils/
     config.js
 ```
 
