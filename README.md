@@ -37,8 +37,10 @@ module.exports = function(
   /* global::console */ console) {
   
   // This is pretty much the Express.js Hello World app, verbatim.
-  // The only difference is that we use arguments to the exported function instead of using require().
-  // The inline comments next to the arguments direct eggnog what to provide for the arguments.
+  // The only difference is that we use arguments to the exported function 
+  //  instead of using require().
+  // The inline comments next to the arguments direct eggnog what to 
+  //  provide for the arguments.
   
   var app = express();
   
