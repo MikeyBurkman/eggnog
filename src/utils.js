@@ -3,8 +3,7 @@
 module.exports = {
 	each: each,
 	findSimilar: findSimilar,
-	normalizeModuleId: normalizeModuleId,
-	resolveModuleInitArguments: resolveModuleInitArguments
+	parseFunctionArgs: parseFunctionArgs
 };
 
 var levenshtein = require('fast-levenshtein');
@@ -32,70 +31,27 @@ function findSimilar(str, arr) {
 	return ret;
 }
 
-function getArgsForFunction(fn) {
-  var fnRegex = /function (.+)?\((.*)\)/;
+function parseFunctionArgs(fn) {
+	// Note: [\s\S] matches any character, including newline
+  var fnRegex = /function(?:\s*)(?:\w*)\(([^)]*)\)/;
 
-  var match = fn.toString().match(fnRegex);
+  var match = fnRegex.exec(fn.toString());
   if (!match) {
     throw 'Was not a function';
   }
 
-  var args = match[2];
+  var args = match[1];
   if (args.length === 0) {
     return [];
   }
 
+	// Pull out inline comments, if there are any
+	var argRegex = /(?:\/\*([\s\S]+)\*\/)?(\w+)/;
+
   return args.split(',').map(function(s) {
-    return s.trim();
-  });
-}
-
-function normalizeModuleId(id) {
-	var prefix, idVal;
-
-	id = id.toLowerCase();
-
-	var split = id.split('::');
-	if (split.length == 1) {
-		prefix = '';
-		idVal = id;
-	} else if (split.length > 2) {
-		throw 'Invalid ID: ' + id;
-	} else {
-		prefix = split[0];
-		idVal = split[1];
-	}
-
-	return {
-		unnormalized: id,
-		prefix: prefix,
-		id: idVal.split('/')
-	};
-}
-
-function resolveModuleInitArguments(module, resolver) {
-	var args = getArgsForFunction(module.init);
-	return args.map(function(argName) {
-		var matchId;
-		var argNameLower = argName.toLowerCase(); // TODO: This should match normalizeId
-		for (var depIdx in module.requires) {
-			var dep = module.requires[depIdx];
-			if (argNameLower === dep.id[dep.id.length-1]) {
-				if (matchId) {
-					throw new Error('Cannot use argument injection for argument [' + argName +
-					'] because there are two dependencies that match: [' + matchId.unnormalized + '] and [' +
-					dep.unnormalized + ']');
-				}
-
-				matchId = dep;
-			}
-		}
-
-		if (!matchId) {
-			// TODO: Suggestions
-			throw new Error('Could not find dependency for argument: [' + argName + ']');
-		}
-
-		return resolver.require(matchId.unnormalized);
-	});
+			// Remove all whitespace
+			return s.replace(/\s/g, '');
+		}).map(function(s) {
+			return argRegex.exec(s).slice(1);
+		});
 }

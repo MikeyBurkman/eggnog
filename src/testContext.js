@@ -7,31 +7,31 @@ var path = require('path');
 
 function TestContext(srcDirectory) {
 
+  srcDirectory = path.join(process.cwd(), srcDirectory);
   this.createModule = createModule;
 
   function createModule(moduleId, dependencies) {
 
-    var dir = path.join(srcDirectory, moduleId);
+    var modulePath = path.join(srcDirectory, moduleId);
 
-    var loaded = require(dir);
+    var fn = require(modulePath);
 
-    if (typeof(loaded) === 'function') {
-      // These modules don't have any dependencies, so they're pretty boring
-      return loaded();
-    }
+		var args;
+		try {
+			args = utils.parseFunctionArgs(fn);
+		} catch (ex) {
+			throw new Error('Error trying to parse functions for module [' + modulePath + ']: ' + ex);
+		}
 
-    var module = {
-      init: loaded.init,
-      requires: (loaded.requires || []).map(utils.normalizeModuleId)
-    };
-
-    // Verify that each thing in module.requires is accounted for in the dependencies argument
-    for (var reqIdx in module.requires) {
-      var req = module.requires[reqIdx].unnormalized;
-      if (!dependencies.hasOwnProperty(req)) {
-        throw new Error('Cannot load module [' + moduleId + '] because of a missing dependency: [' + req + ']');
+    var initArgs = args.map(function(arg) {
+      var argImport = arg[0];
+      var argName = arg[1];
+      if (!dependencies.hasOwnProperty(argImport)) {
+        throw new Error('Cannot load module [' + modulePath + '] because of a missing dependency: [' + argImport + ']');
       }
-    }
+
+      return dependencies[argImport];
+    });
 
     var resolver = {
       require: function(id) {
@@ -39,9 +39,7 @@ function TestContext(srcDirectory) {
       }
     };
 
-    var initArgs = utils.resolveModuleInitArguments(module, resolver);
-
-    return module.init.apply(resolver, initArgs);
+    return fn.apply(undefined, initArgs);
 
   }
 

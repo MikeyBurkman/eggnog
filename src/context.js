@@ -18,30 +18,16 @@ function Context(opts) {
 		opts = {
 			srcDirectory: path.join(process.cwd(), opts),
 			nodeModulesAt: process.cwd()
-		}
+		};
 	}
 
 	var srcDirectory = opts.srcDirectory;
 	var nodeModulesAt = opts.nodeModulesAt;
 	var resolverOverrides = opts.resolvers || {};
 
-	//// Constants ////
-
-	// List of properties allowed in module.exports.
-	// These are not necessarily required. They are mostly to detect typos.
-	var validMappingProperties = [
-		'_id',
-		'requires',
-		'init',
-		'scope',
-		'isMain'
-	];
-	var scopes = ['singleton', 'instance'];
-
 	//// Local variables ////
 
 	var mappings = {};
-	var mainModule = undefined;
 
 	// Contains modules already resolved (so we don't call init twice)
 	var resolved = {};
@@ -60,8 +46,6 @@ function Context(opts) {
 
 	var moduleContext = this;
 	this.loadModule = loadModule;
-	this.main = loadMainModule;
-	this.getMainModuleId = getMainModuleId;
 
 	//////////////////
 
@@ -77,6 +61,7 @@ function Context(opts) {
 			delete resolvers[resolverPrefix];
 		}
 	});
+	var validModulePrefixes = Object.keys(resolvers);
 
 	// Scan the given directory and add everything to our modules
 	utils.each(fileScanner(srcDirectory), function(module, filename) {
@@ -85,38 +70,12 @@ function Context(opts) {
 
 	//// Functions /////
 
-	function getMainModuleId() {
-		return mainModule;
-	}
-
-	function addMapping(m, filename) {
+	function addMapping(fn, filename) {
 
 		var msg;
 
-		// If the module is just a function, then we assume it's an init with no dependencies
-		if (typeof(m) === 'function') {
-			m = {
-				init: m
-			};
-		}
-
-		verifyMappingProperties(m);
-
-		// _id overrides a built ID -- internal use only
-		var id = m._id || filename;
-
-		var requires = m.requires || [];
-		var init = m.init;
-		var isMain = m.isMain;
-		var scope = m.scope || 'singleton';
-
-		if (scopes.indexOf(scope) === -1) {
-			msg = 'Unrecognized scope: [' + scope + '] for ID [' + id + ']';
-			throwError(buildMissingDepMsg(msg, scope, scopes));
-		}
-
-		var normId = utils.normalizeModuleId(id);
-		id = normId.unnormalized;
+		var normId = normalizeModuleId(filename);
+		var id = normId.unnormalized;
 
 		if (mappings[id]) {
 			msg = 'Error: Already had mapping for [' + id + ']';
@@ -127,43 +86,37 @@ function Context(opts) {
 			throwError(msg);
 		}
 
-		// Verify that each required module has a correct (or no) prefix
-		requires = requires.map(utils.normalizeModuleId);
+		var args;
+		try {
+			args = utils.parseFunctionArgs(fn);
+		} catch (ex) {
+			throw new Error('Error trying to parse functions for module [' + filename + ']: ' + ex);
+		}
 
-		var validPrefixes = Object.keys(resolvers);
-		requires.forEach(function(requiresId) {
-			if (validPrefixes.indexOf(requiresId.prefix) === -1) {
-				msg = 'Unrecognized prefix for require: [' + requiresId.unnormalized + '] for ID [' + id + ']';
-				throwError(buildMissingDepMsg(msg, requiresId.prefix, validPrefixes));
+		// Verify that each required module has a correct (or no) prefix
+		var requires = args.map(function(arg) {
+			var argImport = normalizeModuleId(arg[0]);
+			var argName = arg[1];
+
+			if (validModulePrefixes.indexOf(argImport.prefix) === -1) {
+				msg = 'Unrecognized prefix for require: [' + argImport.unnormalized + '] for ID [' + id + ']';
+				throwError(buildMissingDepMsg(msg, argImport.prefix, validModulePrefixes));
 			}
+
+			return argImport;
 		});
 
 		mappings[id] = {
 			id: normId,
 			filename: filename,
-			scope: scope,
-			init: init,
-			requires: requires
+			requires: requires,
+			init: fn
 		};
-
-		if (isMain) {
-			if (mainModule) {
-				throwError('Could not make [' + id + '] the main module; [' + mainModule + '] was already defined as the main module');
-			}
-			mainModule = id;
-		}
 	}
 
 	function loadModule(id, parentId) {
-		id = utils.normalizeModuleId(id);
+		id = normalizeModuleId(id);
 		return resolvers[''](id, moduleContext, parentId);
-	}
-
-	function loadMainModule() {
-		if (!mainModule) {
-			throwError('No main module was found');
-		}
-		return loadModule(mainModule);
 	}
 
 	function allExternalIds() {
@@ -179,13 +132,27 @@ function Context(opts) {
 		return msg;
 	}
 
+	function normalizeModuleId(id) {
+		var prefix, idVal;
 
-	function verifyMappingProperties(mapping) {
-		utils.each(mapping, function(_, key) {
-			if (validMappingProperties.indexOf(key) === -1) {
-				throwError(buildMissingDepMsg('Invalid module export key: [' + key + ']', key, validMappingProperties));
-			}
-		});
+		id = id.toLowerCase();
+
+		var split = id.split('::');
+		if (split.length == 1) {
+			prefix = '';
+			idVal = id;
+		} else if (split.length > 2) {
+			throw 'Invalid ID: ' + id;
+		} else {
+			prefix = split[0];
+			idVal = split[1];
+		}
+
+		return {
+			unnormalized: id,
+			prefix: prefix,
+			id: idVal.split('/')
+		};
 	}
 
 	function localModuleResolverFn(normalizedId, context, parentId) {
@@ -233,18 +200,17 @@ function Context(opts) {
 
 			var resolver = new Resolver(m);
 
-			var initArgs = utils.resolveModuleInitArguments(m, resolver);
+			var initArgs = m.requires.map(function(moduleId) {
+				return resolver.require(moduleId.unnormalized);
+			});
 
-			moduleResult = m.init.apply(resolver, initArgs);
+			moduleResult = m.init.apply(undefined, initArgs);
 
 			// This ID resolved, so pop the last item (normId) from the resolving stack
 			resolving.pop();
 
-			// Mark that we've resolved this module.
-			// If a module is a singleton, we cache it so we don't re-resolve it next time
-			if (m.scope === 'singleton') {
-				resolved[id] = moduleResult;
-			}
+			// Mark that we've resolved this module and store it in our cache
+			resolved[id] = moduleResult;
 		}
 
 		return moduleResult;
@@ -297,7 +263,7 @@ function Context(opts) {
 
 	function Resolver(mapping) {
 		this.require = function(id) {
-			var normId = utils.normalizeModuleId(id);
+			var normId = normalizeModuleId(id);
 
 			// Verify that id is in the requires
 			var unnormalizedRequires = mapping.requires.map(function(r) {
