@@ -12,22 +12,15 @@ eggnog is a simple, lightweight dependency injection framework for NodeJs
 
 [Link to NPM](https://www.npmjs.com/package/eggnog)
 
-Current Version: 1.0.1
+Current Version: 1.1.0
 
 ##### Here's what a typical NodeJs module might look like:
 ```js
 // src/server/index.js
-module.exports = {
-  requires: [
-    'utils/config', // Local module, defined below
-    'lib::express', // ExpressJs
-    'global::console' // Node's built-in console
-  ],
-  isMain: true, // Indicates this is the main module for our app
-  init: init
-};
-
-function init(config, express, console) {
+module.exports = function(
+  /* utils/config */ config, 
+  /* lib::express */ express, 
+  /* global::console */ console) {
   // Pretty much the Express.js Hello World app, verbatim
   
   var app = express();
@@ -43,7 +36,7 @@ function init(config, express, console) {
   });
   
   return app;
-}
+};
 ```
 
 ##### Our static config file that could be shared by multiple modules:
@@ -65,15 +58,13 @@ module.exports = function() {
 // This file is at the root of our project, alongside node_modules
 var Context = require('eggnog').Context;
 
-var context = new Context({
-  srcDirectory: __dirname + '/src', // Where your source is. Our code is all in src/
-  nodeModulesAt: __dirname // Where the node_modules directory is (for requiring external libraries)
-});
+var context = new Context('src'); // Point eggnog at our source directory
 
-// context.main() will find the "main" module, load it and any transitive dependencies, 
-//  and then execute its init() function.
+// context.loadModule('server/index') will find the "server/index" module in the 'src' directory, 
+//  load it and any transitive dependencies, and then execute its function, automatically supplying 
+//  its transitive dependencies as the arguments.
 // It returns whatever the main module returned.
-var app = context.main();
+var app = context.loadModule('server/index');
 ```
 
 ##### And launching our application is nothing special
