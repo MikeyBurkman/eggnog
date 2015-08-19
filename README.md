@@ -14,16 +14,30 @@ eggnog is a simple, lightweight dependency injection framework for NodeJs
 
 Current Version: 1.1.0
 
-##### Here's what a typical NodeJs module might look like:
+##### Let's use this file structure for our application:
+```
+index.js
+node_modules
+  express
+    ...
+src
+  server
+    index.js
+  utils
+    config.js
+```
+
+##### Here's what our server/index.js module might look like:
 ```js
 // src/server/index.js
 module.exports = function(
   /* utils/config */ config, 
   /* lib::express */ express, 
   /* global::console */ console) {
-  // Pretty much the Express.js Hello World app, verbatim
-  // Only now anything we would have required is provided as arguments.
-  // The inline comments direct eggnog what to provide for the arguments.
+  
+  // This is pretty much the Express.js Hello World app, verbatim.
+  // The only difference is that we use arguments to the exported function instead of using require().
+  // The inline comments next to the arguments direct eggnog what to provide for the arguments.
   
   var app = express();
   
@@ -57,7 +71,7 @@ module.exports = function() {
 ##### What about configuring eggnog to make the app run?
 ```js
 // index.js
-// This file is at the root of our project, alongside the node_modules directory
+// This file needs to be at the root of our project, alongside the node_modules directory
 
 // All of our source files are ./src
 var context = new require('eggnog').Context('src');
