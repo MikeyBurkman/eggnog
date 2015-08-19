@@ -17,6 +17,7 @@ Current Version: 1.1.0
 ##### Let's use this file structure for our application:
 ```
 index.js
+package.json
 node_modules/
   express/
     ...
