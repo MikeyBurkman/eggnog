@@ -14,7 +14,7 @@ eggnog is a simple, lightweight dependency injection framework for NodeJs
 
 Current Version: 1.1.0
 
-##### Let's use this file structure for our application:
+##### Let's assume this is file structure for our application:
 ```
 index.js
 package.json
@@ -28,9 +28,8 @@ src/
     config.js
 ```
 
-##### Here's what our server/index.js module might look like:
+##### Here's what our `src/server/index.js` module might look like:
 ```js
-// src/server/index.js
 module.exports = function(
   /* utils/config */ config, 
   /* lib::express */ express, 
@@ -58,9 +57,8 @@ module.exports = function(
 };
 ```
 
-##### Our static config file that could be shared by multiple modules:
+##### Our `src/utils/config.js` looks like this:
 ```js
-// src/utils/config.js
 module.exports = function() {
   return {
     serverPort: 8080,
@@ -71,7 +69,7 @@ module.exports = function() {
 };
 ```
 
-##### What about configuring eggnog to make the app run?
+##### Finally, `index.js` pulls everything together
 ```js
 // index.js
 // This file needs to be at the root of our project, alongside the node_modules directory
@@ -88,7 +86,7 @@ var context = new eggnog.Context('./src');
 var app = context.loadModule('server/index');
 ```
 
-##### And launching our application is nothing special
+##### Launching our application is nothing special:
 ```sh
 node index.js
 ```
