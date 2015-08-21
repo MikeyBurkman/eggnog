@@ -39,6 +39,7 @@ function Context(opts) {
 	var resolvers = {
 		'': localModuleResolverFn,
 		'lib': nodeModulesResolverFn,
+		'core': coreModulesResolverFn,
 		'global': nodeJsGlobalResolverFn
 	};
 
@@ -239,24 +240,25 @@ function Context(opts) {
 		return x;
 	}
 
-	// The equivalent of require() in normal node apps
-	function nodeModulesResolverFn(normalizedId, context, parentId) {
-		// TODO: Break out core modules from node_modules, so we can do better error handling
+	// Requires core modules like path and fs
+	function coreModulesResolverFn(normalizedId, context, parentId) {
+		var coreId = normalizedId.id[0]; // TODO: Validate that there's only one ID
 
-		var extId = normalizedId.id[0]; // TODO: Validate that there's only one ID
-
-		// First try to load it as a core module (available to all node apps regardless of project.json)
-		// Can't figure out a good way to detect whether a core module without trying it
 		try {
-			return require(extId);
-		} catch (notACoreModule) {
-			// Ignore. Not great.
+			return require(coreId);
+		} catch (ex) {
+			throw new Error('Erorr loading external module [' + coreId + '] from module [' + parentId.unnormalized + ']: ' + ex);
 		}
+	}
 
+	// Requires modules from the node_modules directory
+	function nodeModulesResolverFn(normalizedId, context, parentId) {
 		if (!nodeModulesAt) {
 			throwError('Before you can load external dependencies, you must specify where node_modules can be found by ' +
 				'setting the \'nodeModulesAt\' option when creating the context');
 		}
+
+		var extId = normalizedId.id[0]; // TODO: Validate that there's only one ID
 
 		var modulePath = path.join(nodeModulesAt, extId);
 		if (!externalDepExists[modulePath]) {
@@ -272,7 +274,11 @@ function Context(opts) {
 
 		}
 
-		return require(modulePath);
+		try {
+			return require(modulePath);
+		} catch (ex) {
+			throw new Error('Erorr loading external module [' + extId + '] from module [' + parentId.unnormalized + ']: ' + ex);
+		}
 	}
 
 	function throwError(msg) {
