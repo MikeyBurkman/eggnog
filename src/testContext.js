@@ -14,7 +14,11 @@ function TestContext(srcDirectory) {
 
     var modulePath = path.join(srcDirectory, moduleId);
 
-    var fn = require(modulePath);
+    try {
+      var fn = require(modulePath);
+    } catch (ex) {
+      throw new Error('Could not load module at [' + modulePath + ']: ' + ex);
+    }
 
 		var args;
 		try {
@@ -26,18 +30,17 @@ function TestContext(srcDirectory) {
     var initArgs = args.map(function(arg) {
       var argImport = arg[0];
       var argName = arg[1];
+
+      if (!argImport) {
+        throw new Error('Argument [' + argName + '] for ID [' + moduleId + '] was missing an inline comment indicating what module should be injected');
+      }
+
       if (!dependencies.hasOwnProperty(argImport)) {
-        throw new Error('Cannot load module [' + modulePath + '] because of a missing dependency: [' + argImport + ']');
+        throw new Error('Cannot load module [' + moduleId + '] because of a missing dependency: [' + argImport + ']');
       }
 
       return dependencies[argImport];
     });
-
-    var resolver = {
-      require: function(id) {
-        return dependencies[id];
-      }
-    };
 
     return fn.apply(undefined, initArgs);
 

@@ -22,7 +22,7 @@ function Context(opts) {
 	}
 
 	var srcDirectory = opts.srcDirectory;
-	var nodeModulesAt = opts.nodeModulesAt;
+	var nodeModulesAt = path.join(opts.nodeModulesAt, 'node_modules');
 	var resolverOverrides = opts.resolvers || {};
 
 	//// Local variables ////
@@ -41,6 +41,10 @@ function Context(opts) {
 		'lib': nodeModulesResolverFn,
 		'global': nodeJsGlobalResolverFn
 	};
+
+	// If this has a value for the external dependency module path, then that
+	//	dependency exists. Used for error handling, mostly.
+	var externalDepExists = {};
 
 	//// Public API ////
 
@@ -95,8 +99,14 @@ function Context(opts) {
 
 		// Verify that each required module has a correct (or no) prefix
 		var requires = args.map(function(arg) {
-			var argImport = normalizeModuleId(arg[0]);
+			var argComment = arg[0];
 			var argName = arg[1];
+
+			if (!argComment) {
+				throwError('Argument [' + argName + '] for ID [' + id + '] was missing an inline comment indicating what module should be injected');
+			}
+
+			var argImport = normalizeModuleId(argComment);
 
 			if (validModulePrefixes.indexOf(argImport.prefix) === -1) {
 				msg = 'Unrecognized prefix for require: [' + argImport.unnormalized + '] for ID [' + id + ']';
@@ -120,14 +130,13 @@ function Context(opts) {
 	}
 
 	function allExternalIds() {
-		var modulePath = path.join(nodeModulesAt, 'node_modules');
-		return fs.readdirSync(modulePath);
+		return fs.readdirSync(nodeModulesAt);
 	}
 
 	function buildMissingDepMsg(msg, id, possibleIds) {
 		var possible = utils.findSimilar(id, possibleIds);
 		if (possible.length > 0) {
-			msg += '; maybe you meant: [' + possible.join(', ') + ']?';
+			msg += '; maybe you meant: [' + possible.join(' OR ') + ']?';
 		}
 		return msg;
 	}
@@ -142,7 +151,7 @@ function Context(opts) {
 			prefix = '';
 			idVal = id;
 		} else if (split.length > 2) {
-			throw 'Invalid ID: ' + id;
+			throwError('Invalid ID: [' + id + ']');
 		} else {
 			prefix = split[0];
 			idVal = split[1];
@@ -232,11 +241,7 @@ function Context(opts) {
 
 	// The equivalent of require() in normal node apps
 	function nodeModulesResolverFn(normalizedId, context, parentId) {
-		// TODO: Cache the results of these so we don't need to do existsSync() every time
-		if (!nodeModulesAt) {
-			throwError('Before you can load external dependencies, you must specify where node_modules can be found by ' +
-				'setting the \'nodeModulesAt\' option when creating the context');
-		}
+		// TODO: Break out core modules from node_modules, so we can do better error handling
 
 		var extId = normalizedId.id[0]; // TODO: Validate that there's only one ID
 
@@ -247,13 +252,26 @@ function Context(opts) {
 		} catch (notACoreModule) {
 			// Ignore. Not great.
 		}
-		var modulePath = path.join(nodeModulesAt, 'node_modules', extId);
-		if (!fs.existsSync(modulePath)) {
+
+		if (!nodeModulesAt) {
+			throwError('Before you can load external dependencies, you must specify where node_modules can be found by ' +
+				'setting the \'nodeModulesAt\' option when creating the context');
+		}
+
+		var modulePath = path.join(nodeModulesAt, extId);
+		if (!externalDepExists[modulePath]) {
 			// yes I know the docs don't like this method.
 			// But it's a little better user experience than trying to require a file that isn't there.
-			var msg = 'Could not find external dependency [' + extId + '] at path [' + modulePath + '] from module + [' + parentId.unnormalized + ']';
-			throwError(buildMissingDepMsg(msg, extId, allExternalIds()));
+			if (fs.existsSync(modulePath)) {
+				externalDepExists[modulePath] = true; // cache it so we avoid the lookup next time
+
+			} else {
+				var msg = 'Could not find external dependency [' + extId + '] at path [' + modulePath + '] from module + [' + parentId.unnormalized + ']';
+				throwError(buildMissingDepMsg(msg, extId, allExternalIds()));
+			}
+
 		}
+
 		return require(modulePath);
 	}
 
@@ -270,7 +288,6 @@ function Context(opts) {
 				return r.unnormalized;
 			});
 			if (unnormalizedRequires.indexOf(normId.unnormalized) === -1) {
-				// TODO: Suggestions
 				var msg = 'Invalid/Unknown module for ID [' + id + '] in module [' + mapping.id.unnormalized + ']';
 				throwError(buildMissingDepMsg(msg, normId.unnormalized, unnormalizedRequires));
 			}
