@@ -92,3 +92,25 @@ node index.js
 ```
 
 That's it! eggnog will handle the rest.
+
+##### What about unit testing?
+```js
+var eggnog = require('eggnog');
+var sinon = require('sinon');
+
+var context = new eggnog.TestContext('/src');
+
+var express = sinon.spy();
+// Set up express spy
+...
+
+var app = context.createModule('server/index', {
+  'utils/config': {serverPort: 1111},
+  'lib::express: express,
+  'global::console': { log: function() {} }
+});
+
+// Assertions follow...
+...
+
+```
