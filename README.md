@@ -108,7 +108,7 @@ var express = sinon.spy();
 
 var app = context.createModule('server/index', {
   'utils/config': {serverPort: 1111},
-  'lib::express: express,
+  'lib::express': express,
   'global::console': { log: function() {} }
 });
 
