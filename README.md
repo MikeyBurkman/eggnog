@@ -6,13 +6,13 @@ See the [wiki](https://github.com/MikeyBurkman/eggnog/wiki) for complete documen
 eggnog is a simple, lightweight dependency injection framework for NodeJs
 - Designed for making modular applications easy to write
 - Minimal boilerplate -- Convention over configuration
-- No config files or factories to define anything -- eggnog crawls your project for you
+- No config files or factories to maintain -- eggnog crawls your project for you
 - Dependency injection allow for easier testing
 - No need to require any special dependencies in your files -- eggnog acts more like a spec than a library
 
 [Link to NPM](https://www.npmjs.com/package/eggnog)
 
-Current Version: 1.1.0
+Current Version: 1.2.0
 
 ##### Let's assume this is file structure for our application:
 ```
@@ -33,13 +33,15 @@ src/
 module.exports = function(
   /* utils/config */ config, 
   /* lib::express */ express, 
-  /* global::console */ console) {
+  /* global::console */ console
+  /* core::os */ os) {
   
   // This is pretty much the Express.js Hello World app, verbatim.
   // The only difference is that we use arguments to the exported function 
   //  instead of using require().
   // The inline comments next to the arguments direct eggnog what to 
   //  provide for the arguments.
+  // (Also, I'm including os just to show how to load core modules.)
   
   var app = express();
   
@@ -50,7 +52,7 @@ module.exports = function(
   var server = app.listen(config.serverPort, function () {
     var host = server.address().address;
     var port = server.address().port;
-    console.log('Example app listening at http://%s:%s', host, port);
+    console.log('Example app listening at http://%s:%s on %s', host, port, os.type());
   });
   
   return app;
