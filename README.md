@@ -61,6 +61,8 @@ module.exports = function(
 
 ##### Our `src/utils/config.js` looks like this:
 ```js
+// Note, this file doesn't have any dependencies, so no arguments 
+//  to its export function
 module.exports = function() {
   return {
     serverPort: 8080,
@@ -74,16 +76,17 @@ module.exports = function() {
 ##### Finally, `index.js` pulls everything together
 ```js
 // index.js
-// This file needs to be at the root of our project, alongside the node_modules directory
+// This file needs to be at the root of our project, alongside the 
+//  node_modules directory
 
 var eggnog = require('eggnog');
 
 // All of our source files are ./src
 var context = new eggnog.Context('./src');
 
-// context.loadModule('server/index') will find the "server/index" module in the 'src' directory, 
-//  load it and any transitive dependencies, and then execute its function, automatically supplying 
-//  its transitive dependencies as the arguments.
+// context.loadModule('server/index') will find the "server/index" module in the 
+//  'src' directory, load it and any transitive dependencies, and then execute its 
+//  function, automatically supplying its transitive dependencies as the arguments.
 // It returns whatever the main module returned.
 var app = context.loadModule('server/index');
 ```
