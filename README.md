@@ -75,9 +75,8 @@ module.exports = function() {
 
 ##### Finally, `index.js` pulls everything together
 ```js
-// index.js
-// This file needs to be at the root of our project, alongside the 
-//  node_modules directory
+// Note! This file needs to be at the root of our project, alongside the 
+//  node_modules and 'src' directories!
 
 var eggnog = require('eggnog');
 
