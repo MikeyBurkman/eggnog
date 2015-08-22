@@ -12,7 +12,7 @@ eggnog is a simple, lightweight dependency injection framework for NodeJs
 
 [Link to NPM](https://www.npmjs.com/package/eggnog)
 
-Current Version: 1.2.0
+Current Version: 1.3.0
 
 ##### Let's assume this is file structure for our application:
 ```
