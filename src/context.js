@@ -117,8 +117,8 @@ function Context(opts) {
 			return argImport;
 		});
 
-		mappings[id] = {
-			id: normId,
+		mappings[normId.id] = {
+			normId: normId,
 			filename: filename,
 			requires: requires,
 			init: fn
@@ -143,42 +143,64 @@ function Context(opts) {
 	}
 
 	function normalizeModuleId(id) {
-		var prefix, idVal;
+		var prefix, idVal, subIds;
 
-		id = id.toLowerCase();
+		var idLower = id.toLowerCase();
 
-		var split = id.split('::');
+		var split = idLower.split('::');
 		if (split.length == 1) {
 			prefix = '';
-			idVal = id;
+			idVal = split[0];
 		} else if (split.length > 2) {
-			throwError('Invalid ID: [' + id + ']');
+			throwError('Invalid ID: [' + id + ']: can only have :: occur once');
 		} else {
 			prefix = split[0];
 			idVal = split[1];
 		}
 
+		// Given idVal = 'foo/bar.baz.dar'
+		// idVal = 'foo/bar' and subIds = ['baz', 'dar']
+		var idValSplit = idVal.split('.');
+		idVal = idValSplit[0];
+		subIds = idValSplit.slice(1);
+
 		return {
 			unnormalized: id,
 			prefix: prefix,
-			id: idVal.split('/')
+			id: idVal,
+			subIds: subIds
 		};
 	}
 
-	function localModuleResolverFn(normalizedId, context, parentId) {
+	function resolveSubIds(obj, normalizedId) {
+		var res = obj;
+		var subIds = normalizedId.subIds;
+
+		var prevKey = undefined;
+		subIds.forEach(function(subId) {
+			if (res === undefined || res === null) {
+				// Catch a potential null pointer
+				var msg = 'Unable to resolve [' + subIds.join('.') + '] on module [' +
+					normalizedId.id + ']: [' + prevKey + '] was null';
+				throwError(msg);
+			}
+
+			res = res[subId];
+			prevKey = subId;
+		});
+		return res;
+	}
+
+	function localModuleResolverFn(normalizedId) {
 		var msg;
 
-		var id = normalizedId.unnormalized;
+		var id = normalizedId.id;
 
 		var m = mappings[id];
-
 		if (!m) {
-			msg = 'Could not find dependency [' + id + ']';
-			if (parentId) {
-				msg += ' in dependencies for [' + parentId.id + ']';
-			}
+			msg = 'Could not find dependency [' + normalizedId.unnormalized + ']';
 			var mappingIds = utils.each(mappings, function(mapping) {
-				return mapping.id.unnormalized;
+				return mapping.normId.unnormalized;
 			});
 
 			throwError(buildMissingDepMsg(msg, id, mappingIds));
@@ -227,38 +249,29 @@ function Context(opts) {
 	}
 
 	// Returns a variable that available in the list of globals
-	function nodeJsGlobalResolverFn(normalizedId, context, parentId) {
-		var globalId = normalizedId.id[0]; // TODO: Verify only one ID
+	function nodeJsGlobalResolverFn(normalizedId) {
+		var globalId = normalizedId.id;
 		var x = global[globalId];
 		if (!x) {
 			var msg = 'Could not find global Node module [' + globalId + ']';
-			if (parentId) {
-				msg += ' from module + [' + parentId.unnormalized + ']';
-			}
 			throwError(buildMissingDepMsg(msg, globalId, Object.keys(global)));
 		}
 		return x;
 	}
 
 	// Requires core modules like path and fs
-	function coreModulesResolverFn(normalizedId, context, parentId) {
-		var coreId = normalizedId.id[0]; // TODO: Validate that there's only one ID
-
-		try {
-			return require(coreId);
-		} catch (ex) {
-			throw new Error('Erorr loading external module [' + coreId + '] from module [' + parentId.unnormalized + ']: ' + ex);
-		}
+	function coreModulesResolverFn(normalizedId) {
+		return require(normalizedId.id);
 	}
 
 	// Requires modules from the node_modules directory
-	function nodeModulesResolverFn(normalizedId, context, parentId) {
+	function nodeModulesResolverFn(normalizedId) {
 		if (!nodeModulesAt) {
 			throwError('Before you can load external dependencies, you must specify where node_modules can be found by ' +
 				'setting the \'nodeModulesAt\' option when creating the context');
 		}
 
-		var extId = normalizedId.id[0]; // TODO: Validate that there's only one ID
+		var extId = normalizedId.id;
 
 		var modulePath = path.join(nodeModulesAt, extId);
 		if (!externalDepExists[modulePath]) {
@@ -268,17 +281,13 @@ function Context(opts) {
 				externalDepExists[modulePath] = true; // cache it so we avoid the lookup next time
 
 			} else {
-				var msg = 'Could not find external dependency [' + extId + '] at path [' + modulePath + '] from module + [' + parentId.unnormalized + ']';
+				var msg = 'Could not find external dependency [' + extId + '] at path [' + modulePath + ']';
 				throwError(buildMissingDepMsg(msg, extId, allExternalIds()));
 			}
 
 		}
 
-		try {
-			return require(modulePath);
-		} catch (ex) {
-			throw new Error('Erorr loading external module [' + extId + '] from module [' + parentId.unnormalized + ']: ' + ex);
-		}
+		return require(modulePath);
 	}
 
 	function throwError(msg) {
@@ -294,11 +303,16 @@ function Context(opts) {
 				return r.unnormalized;
 			});
 			if (unnormalizedRequires.indexOf(normId.unnormalized) === -1) {
-				var msg = 'Invalid/Unknown module for ID [' + id + '] in module [' + mapping.id.unnormalized + ']';
+				var msg = 'Invalid/Unknown module for ID [' + id + '] in module [' + mapping.normId.unnormalized + ']';
 				throwError(buildMissingDepMsg(msg, normId.unnormalized, unnormalizedRequires));
 			}
 
-			return resolvers[normId.prefix](normId, moduleContext, mapping.id);
+			try {
+				var x = resolvers[normId.prefix](normId);
+				return resolveSubIds(x, normId);
+			} catch (ex) {
+				throw new Error('Error loading module [' + id + '] from module [' + mapping.normId.unnormalized + ']: \n' + ex);
+			}
 
 		};
 	}
