@@ -86,7 +86,7 @@ var context = new eggnog.Context('./src');
 // context.loadModule('server/index') will find the "server/index" module in the 
 //  'src' directory, load it and any transitive dependencies, and then execute its 
 //  function, automatically supplying its transitive dependencies as the arguments.
-// It returns whatever the main module returned.
+// It returns whatever the 'server/index' module returned after it loaded.
 var app = context.loadModule('server/index');
 ```
 
