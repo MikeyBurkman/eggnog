@@ -31,7 +31,7 @@ src/
 ##### Here's what our `src/server/index.js` module might look like:
 ```js
 module.exports = function(
-  /* utils/config */ config, 
+  /* utils/config.serverPort */ serverPort, 
   /* lib::express */ express, 
   /* global::console */ console
   /* core::os */ os) {
@@ -49,7 +49,7 @@ module.exports = function(
     res.send('Hello World!');
   });
   
-  var server = app.listen(config.serverPort, function () {
+  var server = app.listen(serverPort, function () {
     var host = server.address().address;
     var port = server.address().port;
     console.log('Example app listening at http://%s:%s on %s', host, port, os.type());
@@ -107,7 +107,7 @@ var express = sinon.spy();
 ...
 
 var app = context.createModule('server/index', {
-  'utils/config': {serverPort: 1111},
+  'utils/config.serverPort': 8080,
   'lib::express': express,
   'global::console': { log: function() {} }
 });
