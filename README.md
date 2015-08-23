@@ -5,6 +5,7 @@ See the [wiki](https://github.com/MikeyBurkman/eggnog/wiki) for complete documen
 
 eggnog is a simple, lightweight dependency injection framework for NodeJs
 - Designed for making modular applications easy to write
+- Injection through function arguments
 - Minimal boilerplate -- Convention over configuration
 - No config files or factories to maintain -- eggnog crawls your project for you
 - Dependency injection allow for easier testing
@@ -33,7 +34,7 @@ src/
 module.exports = function(
   /* utils/config.serverPort */ serverPort, 
   /* lib::express */ express, 
-  /* global::console */ console
+  /* global::console */ console,
   /* core::os */ os) {
   
   // This is pretty much the Express.js Hello World app, verbatim.
