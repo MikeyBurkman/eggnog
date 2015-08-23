@@ -3,8 +3,7 @@
 module.exports = Context;
 
 var utils = require('./utils.js');
-var fileScanner = require('./fileScanner.js');
-
+var glob = require('glob');
 var fs = require('fs');
 var path = require('path');
 
@@ -21,9 +20,12 @@ function Context(opts) {
 		};
 	}
 
+	if (!opts.srcDirectory) {
+		throw new Error('Cannot create an eggnog Context without providing a source directory argument');
+	}
+
 	var srcDirectory = opts.srcDirectory;
 	var nodeModulesAt = path.join(opts.nodeModulesAt, 'node_modules');
-	var resolverOverrides = opts.resolvers || {};
 
 	//// Local variables ////
 
@@ -42,6 +44,7 @@ function Context(opts) {
 		'core': coreModulesResolverFn,
 		'global': nodeJsGlobalResolverFn
 	};
+	var validModulePrefixes = Object.keys(resolvers);
 
 	// If this has a value for the external dependency module path, then that
 	//	dependency exists. Used for error handling, mostly.
@@ -55,27 +58,25 @@ function Context(opts) {
 	//////////////////
 
 	//// Initialization ////
-
-	// Add any resolver overrides
-	utils.each(resolverOverrides, function(resolverFn, resolverPrefix) {
-		if (resolverFn) {
-			// New resolver
-			resolvers[resolverPrefix] = resolverFn;
-		} else {
-			// Allow users to get rid of the old resolver
-			delete resolvers[resolverPrefix];
-		}
-	});
-	var validModulePrefixes = Object.keys(resolvers);
-
-	// Scan the given directory and add everything to our modules
-	utils.each(fileScanner(srcDirectory), function(module, filename) {
-		addMapping(module, filename);
-	});
+	scanSourceDir();
 
 	//// Functions /////
 
-	function addMapping(fn, filename) {
+	function scanSourceDir() {
+		var directoryLen = srcDirectory.length;
+
+		glob.sync(srcDirectory + '/**/*.js').forEach(function(filename) {
+			var module = require(filename);
+
+			// Remove the srcDirectory from the file name
+			// We don't want that to be part of the module ID
+			var moduleFilename = filename.substr(directoryLen+1);
+			var newMapping = buildMapping(module, moduleFilename);
+			mappings[newMapping.normId.id] = newMapping;
+		});
+	}
+
+	function buildMapping(fn, filename) {
 
 		var msg;
 
@@ -88,7 +89,7 @@ function Context(opts) {
 			if (otherFile) {
 				msg += ' ; see [' + otherFile + ']';
 			}
-			throwError(msg);
+			throw new Error(msg);
 		}
 
 		var args;
@@ -104,20 +105,20 @@ function Context(opts) {
 			var argName = arg[1];
 
 			if (!argComment) {
-				throwError('Argument [' + argName + '] for ID [' + id + '] was missing an inline comment indicating what module should be injected');
+				throw new Error('Argument [' + argName + '] for ID [' + id + '] was missing an inline comment indicating what module should be injected');
 			}
 
 			var argImport = normalizeModuleId(argComment);
 
 			if (validModulePrefixes.indexOf(argImport.prefix) === -1) {
 				msg = 'Unrecognized prefix for require: [' + argImport.unnormalized + '] for ID [' + id + ']';
-				throwError(buildMissingDepMsg(msg, argImport.prefix, validModulePrefixes));
+				throw new Error(buildMissingDepMsg(msg, argImport.prefix, validModulePrefixes));
 			}
 
 			return argImport;
 		});
 
-		mappings[normId.id] = {
+		return {
 			normId: normId,
 			filename: filename,
 			requires: requires,
@@ -152,7 +153,7 @@ function Context(opts) {
 			prefix = '';
 			idVal = split[0];
 		} else if (split.length > 2) {
-			throwError('Invalid ID: [' + id + ']: can only have :: occur once');
+			throw new Error('Invalid ID: [' + id + ']: can only have :: occur once');
 		} else {
 			prefix = split[0];
 			idVal = split[1];
@@ -182,7 +183,7 @@ function Context(opts) {
 				// Catch a potential null pointer
 				var msg = 'Unable to resolve [' + subIds.join('.') + '] on module [' +
 					normalizedId.id + ']: [' + prevKey + '] was null';
-				throwError(msg);
+				throw new Error(msg);
 			}
 
 			res = res[subId];
@@ -203,7 +204,7 @@ function Context(opts) {
 				return mapping.normId.unnormalized;
 			});
 
-			throwError(buildMissingDepMsg(msg, id, mappingIds));
+			throw new Error(buildMissingDepMsg(msg, id, mappingIds));
 		}
 
 		var moduleResult;
@@ -224,7 +225,7 @@ function Context(opts) {
 					resolving.shift();
 				}
 				msg = 'Circular dependency detected! [' + resolving.join(' -> ') + ']';
-				throwError(msg);
+				throw new Error(msg);
 			}
 
 			// Currently resolving this id
@@ -254,7 +255,7 @@ function Context(opts) {
 		var x = global[globalId];
 		if (!x) {
 			var msg = 'Could not find global Node module [' + globalId + ']';
-			throwError(buildMissingDepMsg(msg, globalId, Object.keys(global)));
+			throw new Error(buildMissingDepMsg(msg, globalId, Object.keys(global)));
 		}
 		return x;
 	}
@@ -267,7 +268,7 @@ function Context(opts) {
 	// Requires modules from the node_modules directory
 	function nodeModulesResolverFn(normalizedId) {
 		if (!nodeModulesAt) {
-			throwError('Before you can load external dependencies, you must specify where node_modules can be found by ' +
+			throw new Error('Before you can load external dependencies, you must specify where node_modules can be found by ' +
 				'setting the \'nodeModulesAt\' option when creating the context');
 		}
 
@@ -282,16 +283,12 @@ function Context(opts) {
 
 			} else {
 				var msg = 'Could not find external dependency [' + extId + '] at path [' + modulePath + ']';
-				throwError(buildMissingDepMsg(msg, extId, allExternalIds()));
+				throw new Error(buildMissingDepMsg(msg, extId, allExternalIds()));
 			}
 
 		}
 
 		return require(modulePath);
-	}
-
-	function throwError(msg) {
-		throw new Error(msg);
 	}
 
 	function Resolver(mapping) {
@@ -304,7 +301,7 @@ function Context(opts) {
 			});
 			if (unnormalizedRequires.indexOf(normId.unnormalized) === -1) {
 				var msg = 'Invalid/Unknown module for ID [' + id + '] in module [' + mapping.normId.unnormalized + ']';
-				throwError(buildMissingDepMsg(msg, normId.unnormalized, unnormalizedRequires));
+				throw new Error(buildMissingDepMsg(msg, normId.unnormalized, unnormalizedRequires));
 			}
 
 			try {
