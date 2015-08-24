@@ -5,6 +5,7 @@ See the [wiki](https://github.com/MikeyBurkman/eggnog/wiki) for complete documen
 
 eggnog is a simple, lightweight dependency injection framework for NodeJs
 - Designed for making modular applications easy to write
+- Works with the way you structure your application
 - Injection through function arguments
 - Minimal boilerplate -- Convention over configuration
 - No config files or factories to maintain -- eggnog crawls your project for you
