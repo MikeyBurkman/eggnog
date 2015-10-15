@@ -37,6 +37,7 @@ src/
 // express: The Express library from node_modules
 // console: The global console (so our unit tests can verify what we log)
 // os: The core os module, which is provided with Node but isn't a global like console
+// Note that the inline comments tell eggnog what each argument should be
 module.exports = function(
   /* utils/config.serverPort */ serverPort, 
   /* lib::express */ express, 
