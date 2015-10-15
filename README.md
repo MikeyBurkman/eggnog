@@ -49,7 +49,7 @@ module.exports = function(
   //  instead of using require().
   // The inline comments next to the arguments direct eggnog what to 
   //  provide for the arguments.
-  // (Also, I'm including os just to show how to load core modules.)
+  // (The os part isn't in the standard example. It's here just to show how to load core modules.)
   
   var app = express();
   
