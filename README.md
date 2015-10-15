@@ -32,6 +32,11 @@ src/
 
 ##### Here's what our `src/server/index.js` module might look like:
 ```js
+// We'll export a function that specifies all of our dependencies:
+// serverPort: The serverPort variable in the utils/config module (seen later)
+// express: The Express library from node_modules
+// console: The global console (so our unit tests can verify what we log)
+// os: The core os module, which is provided with Node but isn't a global like console
 module.exports = function(
   /* utils/config.serverPort */ serverPort, 
   /* lib::express */ express, 
@@ -104,7 +109,7 @@ That's it! eggnog will handle the rest.
 var eggnog = require('eggnog');
 var sinon = require('sinon');
 
-var context = new eggnog.TestContext('/src');
+var context = new eggnog.TestContext('./src');
 
 var express = sinon.spy();
 // Set up express spy
@@ -113,7 +118,8 @@ var express = sinon.spy();
 var app = context.createModule('server/index', {
   'utils/config.serverPort': 8080,
   'lib::express': express,
-  'global::console': { log: function() {} }
+  'global::console': { log: function() {} },
+  'core::os': { type: function() { return 'os type'; } }
 });
 
 // Assertions follow...
