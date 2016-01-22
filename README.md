@@ -3,6 +3,8 @@
 
 See the [wiki](https://github.com/MikeyBurkman/eggnog/wiki) for complete documentation.
 
+[![Dependency Status](https://david-dm.org/AtomLinter/linter-eslint.svg)](https://david-dm.org/AtomLinter/linter-eslint)
+
 eggnog is a simple, lightweight dependency injection framework for NodeJs
 - Designed for making modular applications easy to write
 - Works with the way you structure your application
